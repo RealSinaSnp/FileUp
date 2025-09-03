@@ -1,0 +1,3 @@
+﻿<Project>
+  <Import Project="../build/FileUp.props" />
+</Project>

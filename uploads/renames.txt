@@ -1,0 +1,10 @@
+@/src/components to @/components:
+Header.js to Header-CV.tsx
+HeaderNarrow.js to .tsx
+HeaderOld.js to .tsx
+HeaderWide.js to .tsx
+InfoCard.js to tsx
+StayDark.js to tsx
+
+@/hooks to @/components:
+CheckNarrow.js to .tsx

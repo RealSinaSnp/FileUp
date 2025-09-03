@@ -1,0 +1,39 @@
+{
+  "Version": 1,
+  "Hash": "tKjaZZ1YoXQTwl+Ew6CjcbowtFANVcYvs7XMsupoRdk=",
+  "Source": "FileUp",
+  "BasePath": "_content/FileUp",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "FileUp/wwwroot",
+      "Source": "FileUp",
+      "ContentRoot": "/var/www/upload/FileUp/wwwroot/",
+      "BasePath": "_content/FileUp",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/var/www/upload/FileUp/wwwroot/index.html",
+      "SourceId": "FileUp",
+      "SourceType": "Discovered",
+      "ContentRoot": "/var/www/upload/FileUp/wwwroot/",
+      "BasePath": "_content/FileUp",
+      "RelativePath": "index.html",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/index.html"
+    }
+  ]
+}

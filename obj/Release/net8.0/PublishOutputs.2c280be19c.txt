@@ -1,0 +1,12 @@
+/var/www/upload/published/FileUp
+/var/www/upload/published/appsettings.Development.json
+/var/www/upload/published/appsettings.json
+/var/www/upload/published/FileUp.dll
+/var/www/upload/published/FileUp.deps.json
+/var/www/upload/published/FileUp.runtimeconfig.json
+/var/www/upload/published/FileUp.pdb
+/var/www/upload/published/Microsoft.AspNetCore.OpenApi.dll
+/var/www/upload/published/Microsoft.OpenApi.dll
+/var/www/upload/published/Swashbuckle.AspNetCore.Swagger.dll
+/var/www/upload/published/Swashbuckle.AspNetCore.SwaggerGen.dll
+/var/www/upload/published/Swashbuckle.AspNetCore.SwaggerUI.dll

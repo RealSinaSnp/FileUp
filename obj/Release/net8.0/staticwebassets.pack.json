@@ -1,0 +1,37 @@
+{
+  "Files": [
+    {
+      "Id": "/var/www/upload/FileUp/wwwroot/index.html",
+      "PackagePath": "staticwebassets/index.html"
+    },
+    {
+      "Id": "/var/www/upload/FileUp/wwwroot/message.cs",
+      "PackagePath": "staticwebassets/message.cs"
+    },
+    {
+      "Id": "/var/www/upload/FileUp/wwwroot/message.js",
+      "PackagePath": "staticwebassets/message.js"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.FileUp.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.FileUp.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.build.FileUp.props",
+      "PackagePath": "build\\FileUp.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildMultiTargeting.FileUp.props",
+      "PackagePath": "buildMultiTargeting\\FileUp.props"
+    },
+    {
+      "Id": "obj/Release/net8.0/staticwebassets/msbuild.buildTransitive.FileUp.props",
+      "PackagePath": "buildTransitive\\FileUp.props"
+    }
+  ],
+  "ElementsToRemove": []
+}
