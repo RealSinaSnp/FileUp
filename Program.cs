@@ -11,13 +11,19 @@ using System.Linq;
 
 /* ── constants ─────────────────────────────────────────── */
 const string BASE_UPLOADS = "/var/lib/fileup/uploads";
-const long MAX_STORAGE = 5L * 1024 * 1024 * 1024;
-const long MAX_FILE_GUEST = 3L * 1024 * 1024;
+// global stores & constants
+var FileStore = new Dictionary<string, FileRecord>();
 var allowedExt = new HashSet<string> {
     ".doc", ".docx", ".gif", ".jpg", ".jpeg", ".png", ".svg",
     ".mpg", ".mpeg", ".mp3", ".odt", ".odp", ".ods", ".pdf",
     ".ppt", ".pptx", ".tif", ".tiff", ".txt", ".xls", ".xlsx", ".wav"
 };
+const long MAX_STORAGE = 5L * 1024 * 1024 * 1024;
+const long MAX_FILE_GUEST = 3L * 1024 * 1024;
+
+
+
+
 
 /* ── boilerplate ───────────────────────────────────────── */
 var builder = WebApplication.CreateBuilder(args);
@@ -107,40 +113,8 @@ app.UseExceptionHandler(errorApp =>
 });
 
 /* ── upload endpoint ───────────────────────────────────── */
-app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
-{
-    var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
-    if (file == null || file.Length == 0) return Results.BadRequest("No file selected");
+app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
-    if (!isAdmin && file.Length > MAX_FILE_GUEST)
-        return Results.BadRequest("Guests: max 3 MB");
-    if (file.Length > 24 * 1024 * 1024)
-        return Results.BadRequest("Max 24 MB");
-
-    var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-    if (!allowedExt.Contains(ext)) return Results.BadRequest("File type not allowed");
-
-    var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
-    if (!isAdmin && !UploadCounter.CheckAndIncrement(ip))
-        return Results.StatusCode((int)HttpStatusCode.TooManyRequests);
-
-    long current = Directory.EnumerateFiles(BASE_UPLOADS, "*", SearchOption.AllDirectories)
-                            .Sum(p => new FileInfo(p).Length);
-    if (current + file.Length > MAX_STORAGE)
-        return Results.StatusCode((int)HttpStatusCode.InsufficientStorage);
-
-    var dir = Path.Combine(BASE_UPLOADS, ext.TrimStart('.'));
-    Directory.CreateDirectory(dir);
-
-    var fname = $"{Guid.NewGuid():N}{ext}";
-    await using var fs = new FileStream(Path.Combine(dir, fname), FileMode.Create);
-    await file.CopyToAsync(fs);
-
-    var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{ext.TrimStart('.')}/{fname}";
-    return Results.Ok(new { fileName = fname, size = file.Length, url });
-})
-.DisableAntiforgery()
-.RequireRateLimiting("uploadPolicy");
 
 app.MapPost("/api/files/imghost", async (HttpContext ctx) =>
 {
@@ -234,6 +208,42 @@ app.MapGet("/admin", () =>
 
 app.Run();
 
+/* ── background cleanup loop ─────────────────────────────── */
+_ = Task.Run(async () =>
+{
+    while (true)
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+            var expired = FileStore.Where(kv => kv.Value.ExpireAt != null && kv.Value.ExpireAt < now).ToList();
+            foreach (var kv in expired)
+            {
+                try
+                {
+                    if (File.Exists(kv.Value.Path))
+                    {
+                        File.Delete(kv.Value.Path);
+                        Console.WriteLine($"🗑 Deleted expired file: {kv.Value.Path}");
+                    }
+                    FileStore.Remove(kv.Key);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"⚠️ Failed to delete {kv.Value.Path}: {ex.Message}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Cleanup loop error: {ex.Message}");
+        }
+
+        await Task.Delay(TimeSpan.FromMinutes(10)); // run every 10 min
+    }
+});
+
+
 /* ── support types ─────────────────────────────────────── */
 record ShortLinkRecord
 {
@@ -247,4 +257,12 @@ record ShortLinkCreateRequest
     public string Url { get; set; } = default!;
     public int Expire { get; set; }
 }
+
+// For tracking uploaded files and their expiration
+public record FileRecord
+{
+    public string Path { get; set; } = default!;
+    public DateTime? ExpireAt { get; set; } // null = forever
+}
+
 

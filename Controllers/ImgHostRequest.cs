@@ -1,6 +1,6 @@
-public class ImghostRequest
-{
-    public string Url { get; set; }
-}
+// public class ImghostRequest
+// {
+//     public string Url { get; set; }
+// }
 
 
