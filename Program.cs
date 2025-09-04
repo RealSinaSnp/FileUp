@@ -174,7 +174,7 @@ app.MapPost("/api/files/imghost", async (HttpContext ctx) =>
 
         var id = Guid.NewGuid().ToString("N")[..6];
         var expireAt = DateTime.UtcNow.AddHours(data.Expire <= 0 ? 1 : data.Expire);
-        ShortLinkStore[id] = new ShortLinkRecord { OriginalUrl = publicUrl, ExpireAt = expireAt };
+        ShortLinkStore[id] = new ShortLinkRecord { OriginalUrl = publicUrl, FilePath = fullPath, ExpireAt = expireAt };
 
         var shortUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}/s/{id}";
         return Results.Ok(new { link = shortUrl });
@@ -197,8 +197,22 @@ app.MapGet("/s/{id}", (string id) =>
 
     if (record.ExpireAt < DateTime.UtcNow)
     {
+        Console.WriteLine($"🗑 Attempting to delete the expired file: {record.FilePath}");
         ShortLinkStore.Remove(id);
-        return Results.StatusCode(410); // gone
+        try
+        {
+            if (File.Exists(record.FilePath))
+            {
+                File.Delete(record.FilePath);
+                Console.WriteLine($"🗑 Deleted expired file: {record.FilePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Failed to delete {record.FilePath}: {ex.Message}");
+        }
+
+        return Results.StatusCode(410); // link gone
     }
 
     return Results.Redirect(record.OriginalUrl);
@@ -224,6 +238,7 @@ app.Run();
 record ShortLinkRecord
 {
     public string OriginalUrl { get; set; } = default!;
+    public string FilePath { get; set; } = default!;  // Absolute path on Server, for cleanup
     public DateTime ExpireAt { get; set; }
 }
 
