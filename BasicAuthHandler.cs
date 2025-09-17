@@ -20,6 +20,26 @@ public sealed class BasicAuthHandler
         Response.Headers["WWW-Authenticate"] = "Basic realm=\"UploadAdmin\"";
         await base.HandleChallengeAsync(props);
     }
+    
+
+// in-memory session manager for admin
+    public static class AdminSessionManager
+    {
+        private static readonly Dictionary<string, DateTime> _sessions = new();
+
+        public static bool IsSessionValid(string user)
+        {
+            if (!_sessions.TryGetValue(user, out var loginTime))
+                return false;
+
+            return DateTime.UtcNow - loginTime < TimeSpan.FromMinutes(4);
+        }
+
+        public static void StartSession(string user)
+        {
+            _sessions[user] = DateTime.UtcNow;
+        }
+    }
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
@@ -56,9 +76,17 @@ public sealed class BasicAuthHandler
             return Task.FromResult(
                 AuthenticateResult.Fail("Bad credentials"));
 
-        var claims  = new[] { new Claim(ClaimTypes.Name, user) };
-        var id      = new ClaimsIdentity(claims, Scheme.Name);
-        var ticket  = new AuthenticationTicket(
+        if (!AdminSessionManager.IsSessionValid(user))
+        {
+            // session expired or new login → reset timer
+            AdminSessionManager.StartSession(user);
+            // if you want strict "expire and force re-login", you could instead:
+            return Task.FromResult(AuthenticateResult.Fail("Session expired"));
+        }
+
+        var claims = new[] { new Claim(ClaimTypes.Name, user) };
+        var id = new ClaimsIdentity(claims, Scheme.Name);
+        var ticket = new AuthenticationTicket(
                           new ClaimsPrincipal(id), Scheme.Name);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));
