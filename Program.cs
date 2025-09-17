@@ -10,7 +10,8 @@ using System.Text.Json.Serialization;
 using System.Linq;
 
 /* ── constants ─────────────────────────────────────────── */
-const string BASE_UPLOADS = "/var/lib/fileup/uploads";
+// const string BASE_UPLOADS = "/var/lib/fileup/uploads"; 
+const string BASE_UPLOADS = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 // global stores & constants
 var FileStore = new Dictionary<string, FileRecord>();
 var allowedExt = new HashSet<string> {
@@ -147,7 +148,7 @@ app.MapPost("/api/files/imghost", async (HttpContext ctx) =>
         var publicUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{subdir}/{filename}";
 
         var id = Guid.NewGuid().ToString("N")[..6];
-        var expireAt = DateTime.UtcNow.AddHours(data.Expire <= 0 ? 1 : data.Expire);
+        var expireAt = DateTime.UtcNow.AddSeconds(data.Expire <= 0 ? 5 : data.Expire);
         ShortLinkStore[id] = new ShortLinkRecord { OriginalUrl = publicUrl, FilePath = fullPath, ExpireAt = expireAt };
 
         var shortUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}/s/{id}";
@@ -206,7 +207,7 @@ app.MapGet("/admin", () =>
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
 
-app.Run();
+
 
 /* ── background cleanup loop ─────────────────────────────── */
 _ = Task.Run(async () =>
@@ -239,10 +240,11 @@ _ = Task.Run(async () =>
             Console.WriteLine($"⚠️ Cleanup loop error: {ex.Message}");
         }
 
-        await Task.Delay(TimeSpan.FromMinutes(10)); // run every 10 min
+        await Task.Delay(TimeSpan.FromSeconds(10)); // Deletion runs every 10 min
     }
 });
 
+app.Run();
 
 /* ── support types ─────────────────────────────────────── */
 record ShortLinkRecord

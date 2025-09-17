@@ -14,7 +14,7 @@ public static class UploadService
             if (file == null || file.Length == 0) return Results.BadRequest("No file selected");
 
             if (!isAdmin && file.Length > maxFileGuest)
-                return Results.BadRequest("Guests: max 3 MB");
+                return Results.BadRequest("Guests can upload max 3 MB");
             if (file.Length > 24 * 1024 * 1024)
                 return Results.BadRequest("Max 24 MB");
 
@@ -45,7 +45,7 @@ public static class UploadService
             DateTime? expireAt = null;
             if (!isAdmin) // guests get auto-expiry
             {
-                expireAt = DateTime.UtcNow.AddHours(24);
+                expireAt = DateTime.UtcNow.AddSeconds(2);
             }
 
             fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };

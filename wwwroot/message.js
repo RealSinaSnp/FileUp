@@ -13,10 +13,22 @@ async function uploadFile() {
 
         if (r.ok) {
             const nice = formatBytes(dat.size);
+
+            // format expiry if present
+            let expTxt = "";
+            if (dat.expireAt) {
+                const exp = new Date(dat.expireAt);
+                expTxt = `<br>Expires at: <strong>${exp.toLocaleString()}</strong>`;
+            } else {
+                expTxt = `<br>Expires: <strong>Never</strong>`;
+            }
+
             show(
               `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
-              `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>`,
-              "success");
+              `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>` +
+              expTxt,
+              "success"
+            );
         } else show("Fail: " + dat, "error");
     } catch (e) { show("Err: " + e, "error"); }
 
