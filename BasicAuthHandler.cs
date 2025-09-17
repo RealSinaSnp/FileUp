@@ -47,9 +47,10 @@ public sealed class BasicAuthHandler
                 AuthenticateResult.Fail("Invalid Basic header"));
         }
 
-        /* single hard-coded account for demo */
-        const string ADMIN_USER = "admin";
-        const string ADMIN_PASS = "kali";
+        // load from config
+        var ADMIN_USER = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminUser"];
+        var ADMIN_PASS = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminPass"];
+
 
         if (user != ADMIN_USER || pass != ADMIN_PASS)
             return Task.FromResult(

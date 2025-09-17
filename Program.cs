@@ -28,6 +28,9 @@ const long MAX_FILE_GUEST = 3L * 1024 * 1024;
 
 /* ── boilerplate ───────────────────────────────────────── */
 var builder = WebApplication.CreateBuilder(args);
+// Add secrets.json (ignore if missing)
+builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
+
 builder.WebHost.UseUrls("http://localhost:4000");
 
 builder.Services.AddEndpointsApiExplorer();
@@ -202,7 +205,7 @@ app.MapGet("/admin", () =>
 
     var html = "<h1>Uploaded files</h1><ul>";
     html += string.Join("", files.Select(f =>
-        $"<li>{WebUtility.HtmlEncode(f.Name)} — {(f.Length / 1024.0):F1} KB</li>"));
+        $"<li>{WebUtility.HtmlEncode(f.Name)} —- {(f.Length / 1024.0):F1} KB</li>"));
     html += "</ul>";
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
@@ -260,6 +263,7 @@ record ShortLinkCreateRequest
     public int Expire { get; set; }
 }
 
+// from Services/UploadService.cs
 // For tracking uploaded files and their expiration
 public record FileRecord
 {
