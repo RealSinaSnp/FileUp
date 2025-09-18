@@ -124,14 +124,21 @@ app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
-        var feature = context.Features.Get<IExceptionHandlerPathFeature>();
-        var ex = feature?.Error;
-
         context.Response.StatusCode = 500;
         context.Response.ContentType = "application/json";
 
-        var payload = new { error = ex?.Message ?? "Unexpected server error" };
-        await context.Response.WriteAsJsonAsync(payload);
+        try
+        {
+            var feature = context.Features.Get<IExceptionHandlerPathFeature>();
+            var ex = feature?.Error;
+
+            var payload = new { error = ex?.Message ?? "Unexpected server error" };
+            await context.Response.WriteAsJsonAsync(payload);
+        }
+        catch
+        {
+            await context.Response.WriteAsync("{\"error\":\"Fatal error while handling exception\"}");
+        }
     });
 });
 

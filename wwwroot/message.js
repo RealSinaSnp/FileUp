@@ -13,7 +13,8 @@ async function uploadFile() {
             try {
                 dat = await r.json();
             } catch {
-                dat = await r.text(); // fallback if it's not JSON
+                show("Fail: " + (dat.error || JSON.stringify(dat)), "error");
+                throw new Error(`Non-JSON response: ${txt}`);
             }
 
         if (r.ok) {
@@ -34,7 +35,7 @@ async function uploadFile() {
                 expTxt,
                 "success"
             );
-        } else show("Fail: " + dat, "error");
+        } else show("Fail: " + (dat.error || JSON.stringify(dat)), "error");
     } catch (e) { show("Err: " + e, "error"); }
 
     function show(msg, cls) {
