@@ -145,12 +145,8 @@ app.UseExceptionHandler(errorApp =>
 /* ── upload endpoint ───────────────────────────────────── */
 app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
-
 /* ── in-memory shortlink store ─────────────────────────── */
 var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
-
-/* ── upload endpoints ──────────────────────────────────── */
-app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
 /* ── imghost endpoints ─────────────────────────────────── */
 app.MapImghostEndpoints(BASE_UPLOADS, ShortLinkStore);
