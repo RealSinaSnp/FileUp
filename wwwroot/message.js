@@ -1,5 +1,5 @@
 async function uploadFile() {
-    const inp   = document.getElementById("fileInput");
+    const inp = document.getElementById("fileInput");
     const resEl = document.getElementById("result");
 
     if (!inp.files[0]) { show("Please choose a file", "error"); return; }
@@ -8,26 +8,21 @@ async function uploadFile() {
     fd.append("file", inp.files[0]);
 
     try {
-        const r   = await fetch("/api/files/upload", { method: "POST", body: fd });
+        const r = await fetch("/api/files/upload", { method: "POST", body: fd });
         let dat;
-            try {
-                dat = await r.json();
-            } catch {
-                show("Fail: " + (dat.error || JSON.stringify(dat)), "error");
-                throw new Error(`Non-JSON response: ${txt}`);
-            }
+
+        try {
+            dat = await r.json();
+        } catch (e) {
+            show(`Fail: Server returned invalid JSON (status ${r.status})`, "error");
+            return;
+        }
 
         if (r.ok) {
             const nice = formatBytes(dat.size);
-
-            // format expiry if present
-            let expTxt = "";
-            if (dat.expireAt) {
-                const exp = new Date(dat.expireAt);
-                expTxt = `<br>Expires at: <strong>${exp.toLocaleString()}</strong>`;
-            } else {
-                expTxt = `<br>Expires: <strong>Never</strong>`;
-            }
+            const expTxt = dat.expireAt
+                ? `<br>Expires at: <strong>${new Date(dat.expireAt).toLocaleString()}</strong>`
+                : "<br>Expires: <strong>Never</strong>";
 
             show(
                 `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
@@ -35,8 +30,12 @@ async function uploadFile() {
                 expTxt,
                 "success"
             );
-        } else show("Fail: " + (dat.error || JSON.stringify(dat)), "error");
-    } catch (e) { show("Err: " + e, "error"); }
+        } else {
+            show(`Fail: ${dat?.error || "Unknown server error"}`, "error");
+        }
+    } catch (e) {
+        show("Err: " + e, "error");
+    }
 
     function show(msg, cls) {
         resEl.className = cls;
@@ -46,11 +45,13 @@ async function uploadFile() {
 
 function escape(str) {
     return str.replace(/[&<>"']/g, c =>
-        ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;" }[c]));
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[c])
+    );
 }
+
 function formatBytes(b, d = 2) {
     if (!+b) return "0 B";
-    const k = 1024, s = ["B","KB","MB","GB"];
+    const k = 1024, s = ["B", "KB", "MB", "GB"];
     const i = Math.floor(Math.log(b) / Math.log(k));
-    return `${parseFloat((b/Math.pow(k,i)).toFixed(d))} ${s[i]}`;
+    return `${parseFloat((b / Math.pow(k, i)).toFixed(d))} ${s[i]}`;
 }
