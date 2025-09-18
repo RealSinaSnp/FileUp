@@ -10,8 +10,8 @@ using System.Text.Json.Serialization;
 using System.Linq;
 
 /* ── constants ─────────────────────────────────────────── */
-// const string BASE_UPLOADS = "/var/lib/fileup/uploads"; 
-const string BASE_UPLOADS = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
+const string BASE_UPLOADS = "/var/lib/fileup/uploads"; 
+// const string BASE_UPLOADS = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 // global stores & constants
 var FileStore = new Dictionary<string, FileRecord>();
 var allowedExt = new HashSet<string> {
