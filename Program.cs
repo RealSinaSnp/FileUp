@@ -81,6 +81,21 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+// atch framework-level errors (like 404, 415, etc.)
+app.Use(async (ctx, next) =>
+{
+    await next();
+
+    if (!ctx.Response.HasStarted &&
+        ctx.Response.StatusCode >= 400 &&
+        ctx.Response.ContentType != "application/json")
+    {
+        ctx.Response.ContentType = "application/json";
+        var problem = new { error = $"HTTP {ctx.Response.StatusCode}" };
+        await ctx.Response.WriteAsJsonAsync(problem);
+    }
+});
+
 app.UseRouting(); // ← MUST be before CORS
 // CORS setup
 //app.UseCors("AllowFrontend");
@@ -109,10 +124,14 @@ app.UseExceptionHandler(errorApp =>
 {
     errorApp.Run(async context =>
     {
-        var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-        var exception = exceptionHandlerPathFeature?.Error;
-        Console.WriteLine($"🔥 Unhandled error: {exception?.Message}");
-        await context.Response.WriteAsync("Something went wrong.");
+        var feature = context.Features.Get<IExceptionHandlerPathFeature>();
+        var ex = feature?.Error;
+
+        context.Response.StatusCode = 500;
+        context.Response.ContentType = "application/json";
+
+        var payload = new { error = ex?.Message ?? "Unexpected server error" };
+        await context.Response.WriteAsJsonAsync(payload);
     });
 });
 
