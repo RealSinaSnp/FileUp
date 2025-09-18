@@ -50,34 +50,5 @@ public static class ImghostService
                 return Results.Problem("Server exploded. Check console.");
             }
         });
-
-        // GET /s/{id}
-        app.MapGet("/s/{id}", (string id) =>
-        {
-            if (!shortLinkStore.TryGetValue(id, out var record))
-                return Results.NotFound();
-
-            if (record.ExpireAt < DateTime.UtcNow)
-            {
-                Console.WriteLine($"Attempting to delete the expired file: {record.FilePath}");
-                shortLinkStore.Remove(id);
-                try
-                {
-                    if (File.Exists(record.FilePath))
-                    {
-                        File.Delete(record.FilePath);
-                        Console.WriteLine($"Deleted expired file: {record.FilePath}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"!! Failed to delete {record.FilePath}: {ex.Message}");
-                }
-
-                return Results.StatusCode(410); // Gone
-            }
-
-            return Results.Redirect(record.OriginalUrl);
-        });
     }
 }

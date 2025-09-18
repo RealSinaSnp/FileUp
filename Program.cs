@@ -145,6 +145,34 @@ app.MapGet("/admin", () =>
 }).RequireAuthorization();
 
 
+/* ── redirect shortlink ────────────────────────────────── */
+app.MapGet("/s/{id}", (string id) =>
+{
+    if (!ShortLinkStore.TryGetValue(id, out var record))
+        return Results.NotFound();
+
+    if (record.ExpireAt < DateTime.UtcNow)
+    {
+        Console.WriteLine($"🗑 Attempting to delete the expired file: {record.FilePath}");
+        ShortLinkStore.Remove(id);
+        try
+        {
+            if (File.Exists(record.FilePath))
+            {
+                File.Delete(record.FilePath);
+                Console.WriteLine($"🗑 Deleted expired file: {record.FilePath}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Failed to delete {record.FilePath}: {ex.Message}");
+        }
+
+        return Results.StatusCode(410); // link gone
+    }
+
+    return Results.Redirect(record.OriginalUrl);
+});
 
 /* ── background cleanup loop ─────────────────────────────── */
 _ = Task.Run(async () =>
@@ -186,11 +214,12 @@ app.Run();
 /* ── support types ─────────────────────────────────────── */
 public record ShortLinkRecord
 {
-    public string OriginalUrl { get; set; } = default!;
+    public string OriginalUrl { get; set; } = default!; //or =string.Empty;
     public string FilePath { get; set; } = default!;  // Absolute path on Server, for cleanup
     public DateTime ExpireAt { get; set; }
 }
 
+// from Services/ImageHostService.cs
 record ShortLinkCreateRequest
 {
     public string Url { get; set; } = default!;
