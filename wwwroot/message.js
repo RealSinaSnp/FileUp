@@ -24,10 +24,10 @@ async function uploadFile() {
             }
 
             show(
-              `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
-              `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>` +
-              expTxt,
-              "success"
+                `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
+                `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>` +
+                expTxt,
+                "success"
             );
         } else show("Fail: " + dat, "error");
     } catch (e) { show("Err: " + e, "error"); }

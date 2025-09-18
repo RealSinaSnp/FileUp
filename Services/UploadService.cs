@@ -11,15 +11,15 @@ public static class UploadService
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
             var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
-            if (file == null || file.Length == 0) return Results.BadRequest("No file selected");
+            if (file == null || file.Length == 0) return Results.BadRequest(new { error = "No file selected" });
 
             if (!isAdmin && file.Length > maxFileGuest)
-                return Results.BadRequest("Guests can upload max 3 MB");
+                return Results.BadRequest(new { error = "Guests can upload max 3 MB" });
             if (file.Length > 24 * 1024 * 1024)
-                return Results.BadRequest("Max 24 MB");
+                return Results.BadRequest(new { error = "Max 24 MB" });
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExt.Contains(ext)) return Results.BadRequest("File type not allowed");
+            if (!allowedExt.Contains(ext)) return Results.BadRequest(new { error = "File type not allowed" });
 
             var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
             if (!isAdmin && !UploadCounter.CheckAndIncrement(ip))

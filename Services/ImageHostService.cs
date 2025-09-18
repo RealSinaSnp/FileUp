@@ -13,15 +13,15 @@ public static class ImghostService
             {
                 var data = await ctx.Request.ReadFromJsonAsync<ShortLinkCreateRequest>();
                 if (data == null || string.IsNullOrWhiteSpace(data.Url))
-                    return Results.BadRequest("Missing URL");
+                    return Results.BadRequest(new { error = "Missing URL" });
 
                 if (!Uri.IsWellFormedUriString(data.Url, UriKind.Absolute))
-                    return Results.BadRequest("Invalid URL format");
+                    return Results.BadRequest(new { error = "Invalid URL format" });
 
                 var ext = Path.GetExtension(data.Url).ToLowerInvariant();
                 var valid = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
                 if (!valid.Contains(ext))
-                    return Results.BadRequest("Invalid file extension");
+                    return Results.BadRequest(new { error = "Invalid file extension" });
 
                 using var http = new HttpClient();
                 var bytes = await http.GetByteArrayAsync(data.Url);
