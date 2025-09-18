@@ -90,7 +90,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 /* ── in-memory shortlink store ─────────────────────────── */
-var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
+// var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
 
 /* ── middleware ────────────────────────────────────────── */
 app.UseDefaultFiles();
@@ -120,83 +120,17 @@ app.UseExceptionHandler(errorApp =>
 app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
 
-app.MapPost("/api/files/imghost", async (HttpContext ctx) =>
-{
-    try
-    {
-        var data = await ctx.Request.ReadFromJsonAsync<ShortLinkCreateRequest>();
-        if (data == null || string.IsNullOrWhiteSpace(data.Url))
-            return Results.BadRequest("Missing URL");
+/* ── in-memory shortlink store ─────────────────────────── */
+var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
 
-        // Validate URL is absolute and well-formed
-        if (!Uri.IsWellFormedUriString(data.Url, UriKind.Absolute))
-            return Results.BadRequest("Invalid URL format");
+/* ── upload endpoints ──────────────────────────────────── */
+app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
-        var ext = Path.GetExtension(data.Url).ToLowerInvariant();
-        var valid = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
-        if (!valid.Contains(ext)) 
-            return Results.BadRequest("Invalid file extension");
-
-        using var http = new HttpClient();
-        var bytes = await http.GetByteArrayAsync(data.Url);
-
-        var subdir = ext.TrimStart('.');
-        var dir = Path.Combine(BASE_UPLOADS, subdir);
-        Directory.CreateDirectory(dir);
-
-        var filename = $"{Guid.NewGuid():N}{ext}";
-        var fullPath = Path.Combine(dir, filename);
-        await File.WriteAllBytesAsync(fullPath, bytes);
-
-        var publicUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{subdir}/{filename}";
-
-        var id = Guid.NewGuid().ToString("N")[..6];
-        var expireAt = DateTime.UtcNow.AddSeconds(data.Expire <= 0 ? 5 : data.Expire);
-        ShortLinkStore[id] = new ShortLinkRecord { OriginalUrl = publicUrl, FilePath = fullPath, ExpireAt = expireAt };
-
-        var shortUrl = $"{ctx.Request.Scheme}://{ctx.Request.Host}/s/{id}";
-        return Results.Ok(new { link = shortUrl });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine("🔥 EXCEPTION in /api/files/imghost:");
-        Console.WriteLine(ex);
-        return Results.Problem("Server exploded. Check console.");
-    }
-});
+/* ── imghost endpoints ─────────────────────────────────── */
+app.MapImghostEndpoints(BASE_UPLOADS, ShortLinkStore);
 
 
-
-/* ── redirect shortlink ────────────────────────────────── */
-app.MapGet("/s/{id}", (string id) =>
-{
-    if (!ShortLinkStore.TryGetValue(id, out var record))
-        return Results.NotFound();
-
-    if (record.ExpireAt < DateTime.UtcNow)
-    {
-        Console.WriteLine($"🗑 Attempting to delete the expired file: {record.FilePath}");
-        ShortLinkStore.Remove(id);
-        try
-        {
-            if (File.Exists(record.FilePath))
-            {
-                File.Delete(record.FilePath);
-                Console.WriteLine($"🗑 Deleted expired file: {record.FilePath}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠️ Failed to delete {record.FilePath}: {ex.Message}");
-        }
-
-        return Results.StatusCode(410); // link gone
-    }
-
-    return Results.Redirect(record.OriginalUrl);
-});
-
-/* ── admin panel ───────────────────────────────────────── */
+/* ── admin panel ────────────────────────────────────────── */
 app.MapGet("/admin", () =>
 {
     var files = Directory.EnumerateFiles(BASE_UPLOADS, "*", SearchOption.AllDirectories)
@@ -228,19 +162,19 @@ _ = Task.Run(async () =>
                     if (File.Exists(kv.Value.Path))
                     {
                         File.Delete(kv.Value.Path);
-                        Console.WriteLine($"🗑 Deleted expired file: {kv.Value.Path}");
+                        Console.WriteLine($"Deleted expired file: {kv.Value.Path}");
                     }
                     FileStore.Remove(kv.Key);
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"⚠️ Failed to delete {kv.Value.Path}: {ex.Message}");
+                    Console.WriteLine($"! Failed to delete {kv.Value.Path}: {ex.Message}");
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"⚠️ Cleanup loop error: {ex.Message}");
+            Console.WriteLine($"! Cleanup loop error: {ex.Message}");
         }
 
         await Task.Delay(TimeSpan.FromSeconds(10)); // Deletion runs every 10 min
@@ -250,7 +184,7 @@ _ = Task.Run(async () =>
 app.Run();
 
 /* ── support types ─────────────────────────────────────── */
-record ShortLinkRecord
+public record ShortLinkRecord
 {
     public string OriginalUrl { get; set; } = default!;
     public string FilePath { get; set; } = default!;  // Absolute path on Server, for cleanup
