@@ -23,12 +23,12 @@ public static class UploadService
 
             var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
             if (!isAdmin && !UploadCounter.CheckAndIncrement(ip))
-                return Results.StatusCode((int)HttpStatusCode.TooManyRequests);
+                return Results.Json(new { error = "Rate limit exceeded. Try again later." }, statusCode: (int)HttpStatusCode.TooManyRequests);
 
             long current = Directory.EnumerateFiles(baseUploads, "*", SearchOption.AllDirectories)
                                     .Sum(p => new FileInfo(p).Length);
             if (current + file.Length > maxStorage)
-                return Results.StatusCode((int)HttpStatusCode.InsufficientStorage);
+                return Results.Json(new { error = "Storage limit exceeded. (Server storage is full)" }, statusCode: (int)HttpStatusCode.TooManyRequests);
 
             var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
             Directory.CreateDirectory(dir);
