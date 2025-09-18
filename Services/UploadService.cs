@@ -11,15 +11,17 @@ public static class UploadService
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
             var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
-            if (file == null || file.Length == 0) return Results.BadRequest(new { error = "No file selected" });
+            if (file == null || file.Length == 0)
+                return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
             if (!isAdmin && file.Length > maxFileGuest)
-                return Results.BadRequest(new { error = "Guests can upload max 3 MB" });
+                return Results.Json(new { error = "Guests can upload max 3 MB" }, statusCode: (int)HttpStatusCode.Forbidden);
             if (file.Length > 24 * 1024 * 1024)
-                return Results.BadRequest(new { error = "Max 24 MB" });
+                return Results.Json(new { error = "Max upload size is 24 MB" }, statusCode: (int)HttpStatusCode.Forbidden);
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-            if (!allowedExt.Contains(ext)) return Results.BadRequest(new { error = "File type not allowed" });
+            if (!allowedExt.Contains(ext))
+                return Results.Json(new { error = "File type not allowed" }, statusCode: (int)HttpStatusCode.Forbidden);
 
             var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
             if (!isAdmin && !UploadCounter.CheckAndIncrement(ip))
@@ -28,7 +30,7 @@ public static class UploadService
             long current = Directory.EnumerateFiles(baseUploads, "*", SearchOption.AllDirectories)
                                     .Sum(p => new FileInfo(p).Length);
             if (current + file.Length > maxStorage)
-                return Results.Json(new { error = "Storage limit exceeded. (Server storage is full)" }, statusCode: (int)HttpStatusCode.TooManyRequests);
+                return Results.Json(new { error = "Storage limit exceeded. (Server storage is full)" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
             var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
             Directory.CreateDirectory(dir);

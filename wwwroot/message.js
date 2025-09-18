@@ -9,7 +9,12 @@ async function uploadFile() {
 
     try {
         const r   = await fetch("/api/files/upload", { method: "POST", body: fd });
-        const dat = await r.json();
+        let dat;
+            try {
+                dat = await r.json();
+            } catch {
+                dat = await r.text(); // fallback if it's not JSON
+            }
 
         if (r.ok) {
             const nice = formatBytes(dat.size);
