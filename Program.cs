@@ -11,9 +11,32 @@ using System.Text.Json.Serialization;
 using System.Linq;
 
 /* ── constants ─────────────────────────────────────────── */
-const string BASE_UPLOADS = "/var/lib/fileup/uploads";
+string prodPath = "/var/lib/fileup/uploads";
+string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
+string BASE_UPLOADS;
+int port;
+
+if (Directory.Exists(prodPath))
+{
+    BASE_UPLOADS = prodPath;
+    port = 4000;
+    Console.WriteLine($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
+    Console.WriteLine($"[INFO] Binding to port {port}");
+}
+else if (Directory.Exists(devPath))
+{
+    BASE_UPLOADS = devPath;
+    port = 5057;
+    Console.WriteLine($"[INFO] Using development uploads directory: {BASE_UPLOADS}");
+    Console.WriteLine($"[INFO] Binding to port {port}");
+}
+else
+{
+    throw new Exception("No valid upload directory found!");
+}
+
+
 const string BASE_PUBLIC_UPLOADS = "/var/lib/fileup/uploads/public";
-// const string BASE_UPLOADS = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 // global stores & constants
 var FileStore = new Dictionary<string, FileRecord>();
 var expiryQueue = new SortedDictionary<DateTime, List<string>>(); // in-memory priority queue
@@ -35,7 +58,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add secrets.json (ignore if missing)
 builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
-builder.WebHost.UseUrls("http://localhost:4000");
+// builder.WebHost.UseUrls("http://localhost:{port}");
+builder.WebHost.UseUrls($"http://*:{port}"); // listen on all interfaces
+Console.WriteLine($"[INFO] Binding to port {port}");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
