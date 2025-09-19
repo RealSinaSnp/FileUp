@@ -49,7 +49,7 @@ public static class UploadService
             DateTime? expireAt = null;
             if (!isAdmin) // guests get auto-expiry
             {
-                expireAt = DateTime.UtcNow.AddHours(2);
+                expireAt = DateTime.UtcNow.AddMinutes(2); // change it later - file exiry time
                 lock (expiryLock)
                 {
                     if (!expiryQueue.ContainsKey(expireAt.Value))
