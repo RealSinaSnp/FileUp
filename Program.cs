@@ -12,6 +12,7 @@ using System.Linq;
 
 /* ── constants ─────────────────────────────────────────── */
 const string BASE_UPLOADS = "/var/lib/fileup/uploads";
+const string BASE_PUBLIC_UPLOADS = "/var/lib/fileup/uploads/public";
 // const string BASE_UPLOADS = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 // global stores & constants
 var FileStore = new Dictionary<string, FileRecord>();
@@ -147,6 +148,9 @@ app.UseExceptionHandler(errorApp =>
 
 /* ── upload endpoint (UploadService.cs) ───────────────────── */
 app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
+
+/* ── upload endpoint (UploadPublic.cs) ───────────────────── */
+app.MapPublicUploadEndpoints(BASE_PUBLIC_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
 
 /* ── in-memory shortlink store () ─────────────────────────── */
 var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
