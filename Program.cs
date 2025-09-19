@@ -38,6 +38,7 @@ else
 
 const string BASE_PUBLIC_UPLOADS = "/var/lib/fileup/uploads/public";
 // global stores & constants
+/* ── in-memory shortlink store () ─────────────────────────── */
 var FileStore = new Dictionary<string, FileRecord>();
 var expiryQueue = new SortedDictionary<DateTime, List<string>>(); // in-memory priority queue
 var expiryLock = new object(); // to synchronize access to expiryQueue
@@ -172,16 +173,16 @@ app.UseExceptionHandler(errorApp =>
 });
 
 /* ── upload endpoint (UploadService.cs) ───────────────────── */
-app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
+app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
+
 
 /* ── upload endpoint (APIService.cs) ───────────────────── */
 app.MapAPIUploadEndpoints(BASE_PUBLIC_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
 
-/* ── in-memory shortlink store () ─────────────────────────── */
-var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();
+
 
 /* ── imghost endpoints ────────────────────────────────────── */
-app.MapImghostEndpoints(BASE_UPLOADS, ShortLinkStore);
+// app.MapImghostEndpoints(BASE_UPLOADS, FileStore );
 
 
 /* ── admin panel ──────────────────────────────────────────── */
@@ -198,35 +199,6 @@ app.MapGet("/admin", () =>
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
 
-
-/* ── redirect shortlink ─────────────────────────────────── */
-app.MapGet("/s/{id}", (string id) =>
-{
-    if (!ShortLinkStore.TryGetValue(id, out var record))
-        return Results.NotFound();
-
-    if (record.ExpireAt < DateTime.UtcNow)
-    {
-        Console.WriteLine($"🗑 Attempting to delete the expired file: {record.FilePath}");
-        ShortLinkStore.Remove(id);
-        try
-        {
-            if (File.Exists(record.FilePath))
-            {
-                File.Delete(record.FilePath);
-                Console.WriteLine($"🗑 Deleted expired file: {record.FilePath}");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"⚠️ Failed to delete {record.FilePath}: {ex.Message}");
-        }
-
-        return Results.StatusCode(410); // link gone
-    }
-
-    return Results.Redirect(record.OriginalUrl);
-});
 
 // ── background cleanup loop ──
 _ = Task.Run(async () =>

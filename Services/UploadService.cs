@@ -1,4 +1,5 @@
 using System.Net;
+using System.Globalization;
 
 public static class UploadService
 {
@@ -6,13 +7,12 @@ public static class UploadService
                                           Dictionary<string, FileRecord> fileStore,
                                           HashSet<string> allowedExt,
                                           long maxStorage,
-                                          long maxFileGuest,
-                                          SortedDictionary<DateTime, List<string>> expiryQueue,
-                                          object expiryLock)
+                                          long maxFileGuest)
     {
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
             var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
+
             if (file == null || file.Length == 0)
                 return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
@@ -37,32 +37,34 @@ public static class UploadService
             var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
             Directory.CreateDirectory(dir);
 
-            var fname = $"{Guid.NewGuid():N}{ext}";
-            var fullPath = Path.Combine(dir, fname);
+            var originalName = Path.GetFileNameWithoutExtension(file.FileName);
+            DateTime? expireAt = null;
+            if (!isAdmin)
+            {
+                expireAt = DateTime.UtcNow.AddMinutes(2); // configurable expiry
+            }
 
+            // filename: originalName_yyyyMMddHHmmss.ext
+            var fname = expireAt.HasValue 
+                        ? $"{originalName}_{expireAt:yyyyMMddHHmmss}{ext}" 
+                        : $"{originalName}{ext}";
+
+            var fullPath = Path.Combine(dir, fname);
             await using var fs = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(fs);
 
-            var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{ext.TrimStart('.')}/{fname}";
-
-            // track expiry
-            DateTime? expireAt = null;
-            if (!isAdmin) // guests get auto-expiry
-            {
-                expireAt = DateTime.UtcNow.AddMinutes(2); // change it later - file exiry time
-                lock (expiryLock)
-                {
-                    if (!expiryQueue.ContainsKey(expireAt.Value))
-                        expiryQueue[expireAt.Value] = new List<string>();
-                    expiryQueue[expireAt.Value].Add(fullPath);
-                }
-            }
-
             fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
+
+            var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{ext.TrimStart('.')}/{fname}";
 
             return Results.Ok(new { fileName = fname, size = file.Length, url, expireAt });
         })
         .DisableAntiforgery()
         .RequireRateLimiting("uploadPolicy");
     }
+
+    /// <summary>
+    /// Checks if a file has expired based on its filename and deletes it if expired.
+    /// </summary>
+    
 }
