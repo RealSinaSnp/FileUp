@@ -7,9 +7,7 @@ public static class APIService
         Dictionary<string, FileRecord> fileStore,
         HashSet<string> allowedExt,
         long maxStorage,
-        long maxFileSize,
-        SortedDictionary<DateTime, List<string>> expiryQueue,
-        object expiryLock)
+        long maxFileSize)
     {
         app.MapPost("/api/public/upload", async (HttpContext ctx) =>
         {
@@ -35,36 +33,30 @@ public static class APIService
             if (current + file.Length > maxStorage)
                 return Results.Json(new { error = "Storage limit exceeded. (Server storage is full)" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
-            var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
+            // Save in uploads/public/<ext>/ directory
+            var dir = Path.Combine(baseUploads, "public", ext.TrimStart('.'));
             Directory.CreateDirectory(dir);
 
-            var fname = $"{Guid.NewGuid():N}{ext}";
-            var fullPath = Path.Combine(dir, fname);
+            var originalName = Path.GetFileNameWithoutExtension(file.FileName);
+
+            // Optional expireMinutes from form
+            int expireMinutes = 2;
+            if (form.TryGetValue("expireMinutes", out var minutesValue) && int.TryParse(minutesValue, out var parsedMinutes))
+                expireMinutes = Math.Clamp(parsedMinutes, 1, 1440); // 1 min – 24 hours
+
+            var expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
+
+            var safeName = $"{originalName}_{expireAt:yyyyMMddHHmmss}{ext}";
+            var fullPath = Path.Combine(dir, safeName);
 
             await using var fs = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(fs);
 
-            var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/public/{ext.TrimStart('.')}/{fname}";
+            var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/public/{ext.TrimStart('.')}/{safeName}";
 
-            // Read optional expireMinutes from form
-            int expireMinutes = 2; // default
-            if (form.TryGetValue("expireMinutes", out var minutesValue) && int.TryParse(minutesValue, out var parsedMinutes))
-            {
-                // Limit maximum expiry if needed, e.g., max 1440 minutes = 24 hours
-                expireMinutes = Math.Clamp(parsedMinutes, 1, 1440);
-            }
+            fileStore[safeName] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
 
-            var expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
-            lock (expiryLock)
-            {
-                if (!expiryQueue.ContainsKey(expireAt))
-                    expiryQueue[expireAt] = new List<string>();
-                expiryQueue[expireAt].Add(fullPath);
-            }
-
-            fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
-
-            return Results.Ok(new { fileName = fname, size = file.Length, url, expireAt });
+            return Results.Ok(new { fileName = safeName, size = file.Length, url, expireAt });
         })
         .DisableAntiforgery();
     }

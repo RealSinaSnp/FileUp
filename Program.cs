@@ -177,7 +177,7 @@ app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FIL
 
 
 /* ── upload endpoint (APIService.cs) ───────────────────── */
-app.MapAPIUploadEndpoints(BASE_PUBLIC_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
+app.MapAPIUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
 
 
 

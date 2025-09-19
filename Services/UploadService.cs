@@ -62,9 +62,4 @@ public static class UploadService
         .DisableAntiforgery()
         .RequireRateLimiting("uploadPolicy");
     }
-
-    /// <summary>
-    /// Checks if a file has expired based on its filename and deletes it if expired.
-    /// </summary>
-    
 }
