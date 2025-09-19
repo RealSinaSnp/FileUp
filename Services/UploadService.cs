@@ -6,7 +6,9 @@ public static class UploadService
                                           Dictionary<string, FileRecord> fileStore,
                                           HashSet<string> allowedExt,
                                           long maxStorage,
-                                          long maxFileGuest)
+                                          long maxFileGuest,
+                                          SortedDictionary<DateTime, List<string>> expiryQueue,
+                                          object expiryLock)
     {
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
@@ -47,7 +49,13 @@ public static class UploadService
             DateTime? expireAt = null;
             if (!isAdmin) // guests get auto-expiry
             {
-                expireAt = DateTime.UtcNow.AddSeconds(2);
+                expireAt = DateTime.UtcNow.AddHours(2);
+                lock (expiryLock)
+                {
+                    if (!expiryQueue.ContainsKey(expireAt.Value))
+                        expiryQueue[expireAt.Value] = new List<string>();
+                    expiryQueue[expireAt.Value].Add(fullPath);
+                }
             }
 
             fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
