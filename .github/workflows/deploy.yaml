@@ -11,8 +11,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo "Host=${{ secrets.VPS_HOST }} User=${{ secrets.VPS_USER }}"
-
       - name: Deploy on VPS via SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
