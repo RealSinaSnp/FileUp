@@ -11,8 +11,15 @@ public static class APIService
         SortedDictionary<DateTime, List<string>> expiryQueue,
         object expiryLock)
     {
-        app.MapPost("/api/public/upload", async (IFormFile file, HttpContext ctx) =>
+        app.MapPost("/api/public/upload", async (HttpContext ctx) =>
         {
+            var request = ctx.Request;
+            if (!request.HasFormContentType)
+                return Results.Json(new { error = "Invalid form" }, statusCode: (int)HttpStatusCode.BadRequest);
+
+            var form = await request.ReadFormAsync();
+            var file = form.Files.GetFile("file");
+
             if (file == null || file.Length == 0)
                 return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
@@ -39,8 +46,15 @@ public static class APIService
 
             var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/public/{ext.TrimStart('.')}/{fname}";
 
-            // Track expiry (all public files expire)
-            var expireAt = DateTime.UtcNow.AddMinutes(2); // change later as needed
+            // Read optional expireMinutes from form
+            int expireMinutes = 2; // default
+            if (form.TryGetValue("expireMinutes", out var minutesValue) && int.TryParse(minutesValue, out var parsedMinutes))
+            {
+                // Limit maximum expiry if needed, e.g., max 1440 minutes = 24 hours
+                expireMinutes = Math.Clamp(parsedMinutes, 1, 1440);
+            }
+
+            var expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
             lock (expiryLock)
             {
                 if (!expiryQueue.ContainsKey(expireAt))
