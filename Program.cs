@@ -59,7 +59,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
 // builder.WebHost.UseUrls("http://localhost:{port}");
-builder.WebHost.UseUrls($"http://*:{port}"); // listen on all interfaces
+builder.WebHost.UseUrls($"http://localhost:{port}"); // listen on all interfaces
 Console.WriteLine($"[INFO] Binding to port {port}");
 
 builder.Services.AddEndpointsApiExplorer();
