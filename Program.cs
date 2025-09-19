@@ -174,8 +174,8 @@ app.UseExceptionHandler(errorApp =>
 /* ── upload endpoint (UploadService.cs) ───────────────────── */
 app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
 
-/* ── upload endpoint (UploadPublic.cs) ───────────────────── */
-app.MapPublicUploadEndpoints(BASE_PUBLIC_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
+/* ── upload endpoint (APIService.cs) ───────────────────── */
+app.MapAPIUploadEndpoints(BASE_PUBLIC_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST, expiryQueue, expiryLock);
 
 /* ── in-memory shortlink store () ─────────────────────────── */
 var ShortLinkStore = new Dictionary<string, ShortLinkRecord>();

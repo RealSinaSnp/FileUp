@@ -1,8 +1,8 @@
 using System.Net;
 
-public static class UploadPublic
+public static class APIService
 {
-    public static void MapPublicUploadEndpoints(this IEndpointRouteBuilder app,
+    public static void MapAPIUploadEndpoints(this IEndpointRouteBuilder app,
         string baseUploads,
         Dictionary<string, FileRecord> fileStore,
         HashSet<string> allowedExt,
