@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Linq;
 
+
 /* ── constants ─────────────────────────────────────────── */
 string prodPath = "/var/lib/fileup/uploads";
 string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
@@ -36,12 +37,13 @@ else
 }
 
 
-const string BASE_PUBLIC_UPLOADS = "/var/lib/fileup/uploads/public";
+
 // global stores & constants
 /* ── in-memory shortlink store () ─────────────────────────── */
-var FileStore = new Dictionary<string, FileRecord>();
+var FileStore = new ConcurrentDictionary<string, FileRecord>();
 var expiryQueue = new SortedDictionary<DateTime, List<string>>(); // in-memory priority queue
 var expiryLock = new object(); // to synchronize access to expiryQueue
+
 var allowedExt = new HashSet<string> {
     ".doc", ".docx", ".gif", ".jpg", ".jpeg", ".png", ".svg",
     ".mpg", ".mpeg", ".mp3", ".odt", ".odp", ".ods", ".pdf",
@@ -51,6 +53,27 @@ const long MAX_STORAGE = 5L * 1024 * 1024 * 1024;
 const long MAX_FILE_GUEST = 3L * 1024 * 1024;
 
 
+
+// ── Startup scan ───────────────────────────
+// Populate FileStore and expiryQueue with existing files at startup
+var startupExpiryQueue = FileUp.Controllers.StartupScan.ScanAndBuildQueue(BASE_UPLOADS, FileStore.ToDictionary(kv => kv.Key, kv => kv.Value));
+
+// Merge startupExpiryQueue into our main expiryQueue (thread-safe via lock)
+lock (expiryLock)
+{
+    foreach (var kv in startupExpiryQueue)
+    {
+        if (!expiryQueue.ContainsKey(kv.Key))
+            expiryQueue[kv.Key] = new List<string>();
+
+        expiryQueue[kv.Key].AddRange(kv.Value);
+    }
+}
+
+// Start background cleanup with thread-safe access
+FileUp.Controllers.BackgroundCleanup.Start(FileStore.ToDictionary(kv => kv.Key, kv => kv.Value), expiryQueue, expiryLock);
+
+Console.WriteLine($"[INFO] Startup scan completed. {FileStore.Count} files registered for cleanup.");
 
 
 
@@ -94,22 +117,15 @@ builder.Services.AddCors(options =>
             .AllowCredentials(); // if needed, else remove this line
     });
 });
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
-});
+
 
 builder.Services.AddAuthentication("Basic")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthHandler>("Basic", _ => { });
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+
 
 // atch framework-level errors (like 404, 415, etc.)
 app.Use(async (ctx, next) =>
@@ -198,81 +214,6 @@ app.MapGet("/admin", () =>
     html += "</ul>";
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
-
-
-// ── background cleanup loop ──
-_ = Task.Run(async () =>
-{
-    var expiryQueue = new SortedDictionary<DateTime, List<string>>();
-
-    void RebuildQueue()
-    {
-        expiryQueue.Clear();
-        foreach (var kv in FileStore)
-        {
-            if (kv.Value.ExpireAt != null)
-            {
-                if (!expiryQueue.TryGetValue(kv.Value.ExpireAt.Value, out var list))
-                {
-                    list = new List<string>();
-                    expiryQueue[kv.Value.ExpireAt.Value] = list;
-                }
-                list.Add(kv.Key);
-            }
-        }
-    }
-
-    RebuildQueue();
-
-    while (true)
-    {
-        try
-        {
-            if (expiryQueue.Count == 0)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(10));
-                continue;
-            }
-
-            var firstExpire = expiryQueue.Keys.First();
-            var delay = firstExpire - DateTime.UtcNow;
-
-            if (delay > TimeSpan.Zero)
-            {
-                await Task.Delay(delay);
-                continue;
-            }
-
-            // Expire all files at this timestamp
-            var keysToRemove = expiryQueue[firstExpire];
-            foreach (var key in keysToRemove)
-            {
-                if (FileStore.TryGetValue(key, out var rec))
-                {
-                    try
-                    {
-                        if (File.Exists(rec.Path))
-                        {
-                            File.Delete(rec.Path);
-                            Console.WriteLine($"Deleted expired file: {rec.Path}");
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"⚠️ Failed to delete {rec.Path}: {ex.Message}");
-                    }
-                    FileStore.Remove(key);
-                }
-            }
-
-            expiryQueue.Remove(firstExpire);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"! Cleanup loop error: {ex.Message}");
-        }
-    }
-});
 
 
 app.Run();
