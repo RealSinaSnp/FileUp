@@ -2,18 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Collections.Concurrent;
 
 namespace FileUp.Controllers
 {
     public static class StartupScan
     {
-        /// Scan the uploads folder at startup, 
-        /// delete expired files, 
+        /// Scan the uploads folder at startup,
+        /// delete expired files,
         /// populate FileStore for scheduled deletion,
         /// Only deletes files with expiry in their names.
         public static SortedDictionary<DateTime, List<string>> ScanAndBuildQueue(
             string baseUploads,
-            Dictionary<string, FileRecord> fileStore)
+            ConcurrentDictionary<string, FileRecord> fileStore)
         {
             var expiryQueue = new SortedDictionary<DateTime, List<string>>();
 
@@ -48,7 +49,7 @@ namespace FileUp.Controllers
                     continue;
                 }
 
-                // add to fileStore
+                // add/update to ConcurrentDictionary (indexer works for add/update)
                 fileStore[fileName] = new FileRecord { Path = filePath, ExpireAt = expireAt };
 
                 // add to expiryQueue

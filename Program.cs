@@ -56,7 +56,7 @@ const long MAX_FILE_GUEST = 3L * 1024 * 1024;
 
 // ── Startup scan ───────────────────────────
 // Populate FileStore and expiryQueue with existing files at startup
-var startupExpiryQueue = FileUp.Controllers.StartupScan.ScanAndBuildQueue(BASE_UPLOADS, FileStore.ToDictionary(kv => kv.Key, kv => kv.Value));
+var startupExpiryQueue = FileUp.Controllers.StartupScan.ScanAndBuildQueue(BASE_UPLOADS, FileStore);
 
 // Merge startupExpiryQueue into our main expiryQueue (thread-safe via lock)
 lock (expiryLock)
@@ -71,7 +71,7 @@ lock (expiryLock)
 }
 
 // Start background cleanup with thread-safe access
-FileUp.Controllers.BackgroundCleanup.Start(FileStore.ToDictionary(kv => kv.Key, kv => kv.Value), expiryQueue, expiryLock);
+FileUp.Controllers.BackgroundCleanup.Start(FileStore, expiryQueue, expiryLock);
 
 Console.WriteLine($"[INFO] Startup scan completed. {FileStore.Count} files registered for cleanup.");
 
@@ -189,7 +189,15 @@ app.UseExceptionHandler(errorApp =>
 });
 
 /* ── upload endpoint (UploadService.cs) ───────────────────── */
-app.MapUploadEndpoints(BASE_UPLOADS, FileStore, allowedExt, MAX_STORAGE, MAX_FILE_GUEST);
+app.MapUploadEndpoints(
+    BASE_UPLOADS,
+    FileStore,
+    expiryQueue,
+    expiryLock,
+    allowedExt,
+    MAX_STORAGE,
+    MAX_FILE_GUEST
+);
 
 
 /* ── upload endpoint (APIService.cs) ───────────────────── */

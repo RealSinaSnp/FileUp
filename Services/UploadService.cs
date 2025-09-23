@@ -1,13 +1,18 @@
 using System.Net;
 using System.Globalization;
+using System.Collections.Concurrent;
 
 public static class UploadService
 {
-    public static void MapUploadEndpoints(this IEndpointRouteBuilder app, string baseUploads, 
-                                          Dictionary<string, FileRecord> fileStore,
-                                          HashSet<string> allowedExt,
-                                          long maxStorage,
-                                          long maxFileGuest)
+    public static void MapUploadEndpoints(
+                                            this IEndpointRouteBuilder app,
+                                            string baseUploads,
+                                            ConcurrentDictionary<string, FileRecord> fileStore,
+                                            SortedDictionary<DateTime, List<string>> expiryQueue,
+                                            object expiryLock,
+                                            HashSet<string> allowedExt,
+                                            long maxStorage,
+                                            long maxFileGuest)
     {
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
@@ -41,19 +46,32 @@ public static class UploadService
             DateTime? expireAt = null;
             if (!isAdmin)
             {
-                expireAt = DateTime.UtcNow.AddMinutes(2); // configurable expiry
+                expireAt = DateTime.UtcNow.AddMinutes(1); // configurable expiry
             }
 
             // filename: originalName_yyyyMMddHHmmss.ext
-            var fname = expireAt.HasValue 
-                        ? $"{originalName}_{expireAt:yyyyMMddHHmmss}{ext}" 
+            var fname = expireAt.HasValue
+                        ? $"{originalName}_{expireAt:yyyyMMddHHmmss}{ext}"
                         : $"{originalName}{ext}";
 
             var fullPath = Path.Combine(dir, fname);
             await using var fs = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(fs);
 
+            // Safe with ConcurrentDictionary
             fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
+            if (expireAt.HasValue)
+            {
+                lock (expiryLock)
+                {
+                    if (!expiryQueue.TryGetValue(expireAt.Value, out var list))
+                    {
+                        list = new List<string>();
+                        expiryQueue[expireAt.Value] = list;
+                    }
+                    list.Add(fname);
+                }
+            }
 
             var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{ext.TrimStart('.')}/{fname}";
 

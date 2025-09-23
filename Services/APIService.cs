@@ -1,10 +1,11 @@
 using System.Net;
+using System.Collections.Concurrent;
 
 public static class APIService
 {
     public static void MapAPIUploadEndpoints(this IEndpointRouteBuilder app,
         string baseUploads,
-        Dictionary<string, FileRecord> fileStore,
+        ConcurrentDictionary<string, FileRecord> fileStore,
         HashSet<string> allowedExt,
         long maxStorage,
         long maxFileSize)
@@ -54,6 +55,7 @@ public static class APIService
 
             var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/public/{ext.TrimStart('.')}/{safeName}";
 
+            // ✅ safe with ConcurrentDictionary
             fileStore[safeName] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
 
             return Results.Ok(new { fileName = safeName, size = file.Length, url, expireAt });
