@@ -5,6 +5,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
 
+// 
+
 namespace FileUp.Controllers
 {
     public static class BackgroundCleanup
@@ -48,6 +50,12 @@ namespace FileUp.Controllers
                                     continue;
 
                                 expiryQueue.Remove(expireTime);
+
+                                Console.WriteLine("[BackgroundCleanup] Current expiryQueue:");
+                                foreach (var KeyValue in expiryQueue)
+                                {
+                                    Console.WriteLine($"  {KeyValue.Key:u} <-> {string.Join(", ", KeyValue.Value)}");
+                                }
                             }
 
                             foreach (var fname in filesToDelete)

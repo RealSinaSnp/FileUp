@@ -4,14 +4,15 @@ using System.IO;
 using System.Linq;
 using System.Collections.Concurrent;
 
+// Scan the uploads folder at startup,
+// delete expired files,
+// creates dictionary,
+// and passes it to BackgroundCleanup
+
 namespace FileUp.Controllers
 {
     public static class StartupScan
     {
-        /// Scan the uploads folder at startup,
-        /// delete expired files,
-        /// populate FileStore for scheduled deletion,
-        /// Only deletes files with expiry in their names.
         public static SortedDictionary<DateTime, List<string>> ScanAndBuildQueue(
             string baseUploads,
             ConcurrentDictionary<string, FileRecord> fileStore)
@@ -21,18 +22,17 @@ namespace FileUp.Controllers
             foreach (var filePath in Directory.EnumerateFiles(baseUploads, "*.*", SearchOption.AllDirectories))
             {
                 var fileName = Path.GetFileName(filePath);
-                // Only files with expiry timestamp in name (yyyyMMddHHmmss)
                 var parts = fileName.Split('_');
                 if (parts.Length < 2)
                     continue;
 
-                var lastPart = Path.GetFileNameWithoutExtension(parts[^1]); // get expiry part
+                var lastPart = Path.GetFileNameWithoutExtension(parts[^1]); // get expiry part after _
                 if (!DateTime.TryParseExact(lastPart, "yyyyMMddHHmmss",
                         System.Globalization.CultureInfo.InvariantCulture,
-                        System.Globalization.DateTimeStyles.AssumeUniversal,
+                        System.Globalization.DateTimeStyles.None,
                         out var expireAt))
                 {
-                    continue; // skip files without proper expiry
+                    continue; // skip
                 }
 
                 if (expireAt <= DateTime.UtcNow)
