@@ -1,8 +1,8 @@
 using System.Collections.Concurrent;
 
+// limit uploads per IP, per 24 hours
 public static class UploadCounter
 {
-    /* key = IP, value = (count, firstUploadTime) */
     private static readonly ConcurrentDictionary<string, (int c, DateTime t)>
         _map = new();
 
@@ -19,6 +19,6 @@ public static class UploadCounter
                 return (v.c + 1, v.t);
             });
 
-        return _map[ip].c <= 3;   // true = within limit
+        return _map[ip].c <= 5;   // change limit here
     }
 }

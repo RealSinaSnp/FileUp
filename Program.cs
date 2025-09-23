@@ -144,7 +144,6 @@ app.Use(async (ctx, next) =>
 
 app.UseRouting(); // ← MUST be before CORS
 // CORS setup
-//app.UseCors("AllowFrontend");
 app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
