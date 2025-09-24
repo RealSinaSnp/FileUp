@@ -10,12 +10,12 @@ public static class Logger
     {
 
 
-        string prodPath = "/var/lib/fileup/uploads";
+        string prodPath = "/var/lib/fileup";
         string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 
         if (Directory.Exists(prodPath))
         {
-            logFile = "/var/lib/fileup/uploads/upload_log.txt";
+            logFile = "/var/lib/fileup/upload_log.txt";
         }
         else if (Directory.Exists(devPath))
         {
