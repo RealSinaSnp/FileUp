@@ -15,7 +15,7 @@ public static class Logger
 
         if (Directory.Exists(prodPath))
         {
-            logFile = "/var/log/fileup/upload_log.txt";
+            logFile = "/var/lib/fileup/uploads/upload_log.txt";
         }
         else if (Directory.Exists(devPath))
         {
