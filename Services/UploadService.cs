@@ -74,6 +74,9 @@ public static class UploadService
             }
 
             var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/{ext.TrimStart('.')}/{fname}";
+            var originalFullName = file.FileName;
+            Logger.Log($"[UploadService] Incoming file.FileName='{originalFullName}', originalName='{originalName}', ext='{ext}'");
+
 
             return Results.Ok(new { fileName = fname, size = file.Length, url, expireAt });
         })

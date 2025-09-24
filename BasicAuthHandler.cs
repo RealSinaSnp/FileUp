@@ -67,7 +67,7 @@ public sealed class BasicAuthHandler
                 AuthenticateResult.Fail("Invalid Basic header"));
         }
 
-        // load from config
+        // load from secret.json
         var ADMIN_USER = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminUser"];
         var ADMIN_PASS = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminPass"];
 
@@ -80,7 +80,6 @@ public sealed class BasicAuthHandler
         {
             // session expired or new login → reset timer
             AdminSessionManager.StartSession(user);
-            // if you want strict "expire and force re-login", you could instead:
             return Task.FromResult(AuthenticateResult.Fail("Session expired"));
         }
 
