@@ -4,7 +4,32 @@ using System.IO;
 public static class Logger
 {
     private static readonly object _lock = new object();
-    private static readonly string logFile = Path.Combine(AppContext.BaseDirectory, "upload_log.txt");
+    private static readonly string logFile;
+
+    static Logger()
+    {
+
+
+        string prodPath = "/var/lib/fileup/uploads";
+        string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
+
+        if (Directory.Exists(prodPath))
+        {
+            logFile = "/var/log/fileup/upload_log.txt";
+        }
+        else if (Directory.Exists(devPath))
+        {
+            logFile = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\upload_log.txt";
+        }
+        else
+        {
+            throw new Exception("No valid upload directory found!");
+        }
+
+        // create if doesn't exist
+        Directory.CreateDirectory(Path.GetDirectoryName(logFile)!);
+    }
+
 
     public static void Log(string message)
     {
@@ -14,4 +39,5 @@ public static class Logger
             File.AppendAllText(logFile, line + Environment.NewLine);
         }
     }
+    
 }
