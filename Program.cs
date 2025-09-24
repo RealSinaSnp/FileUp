@@ -16,6 +16,7 @@ string prodPath = "/var/lib/fileup/uploads";
 string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 string BASE_UPLOADS;
 int port;
+Console.Error.WriteLine("[BOOT] Program started (stderr test).");
 Logger.Log($"[Welcome] FileUp started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
 if (Directory.Exists(prodPath))
 {
