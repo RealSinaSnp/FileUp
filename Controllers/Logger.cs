@@ -36,7 +36,14 @@ public static class Logger
         var line = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] {message}";
         lock (_lock)
         {
-            File.AppendAllText(logFile, line + Environment.NewLine);
+            try
+            {
+                File.AppendAllText(logFile, line + Environment.NewLine);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Logger failed: {ex.Message}");
+            }
         }
     }
     
