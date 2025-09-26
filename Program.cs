@@ -36,6 +36,7 @@ else
 {
     throw new Exception("No valid upload directory found!");
 }
+Console.WriteLine($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
 
 
 

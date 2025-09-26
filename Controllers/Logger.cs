@@ -39,6 +39,7 @@ public static class Logger
             try
             {
                 File.AppendAllText(logFile, line + Environment.NewLine);
+                Console.WriteLine(logFile, line + Environment.NewLine);
             }
             catch (Exception ex)
             {
