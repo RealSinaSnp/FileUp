@@ -9,6 +9,8 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Linq;
+using FileUp.Controllers;
+using Microsoft.AspNetCore.StaticFiles; // for FileExtensionContentTypeProvider
 
 AppDomain.CurrentDomain.ProcessExit += (s, e) =>
 {
@@ -222,6 +224,37 @@ app.MapGet("/admin", () =>
     html += "</ul>";
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
+
+app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
+{
+    if (!FileStore.TryGetValue(fileName, out var record))
+        return Results.NotFound();
+
+    // Check expiration
+    if (record.ExpireAt.HasValue && DateTime.UtcNow > record.ExpireAt.Value)
+        return Results.StatusCode(410); // Gone
+
+    // Increment and check MaxViews
+    if (record.MaxViews.HasValue)
+    {
+        var views = ViewCounter.IncrementView(fileName);
+        if (views > record.MaxViews.Value)
+            return Results.StatusCode(403); // Forbidden
+    }
+    else
+    {
+        ViewCounter.IncrementView(fileName);
+    }
+
+    // check if file can be opened in browser
+    // othervise download
+    var provider = new FileExtensionContentTypeProvider();
+    if (!provider.TryGetContentType(record.Path, out var contentType))
+        contentType = "application/octet-stream"; // fallback
+
+    // ── Serve file inline (not as attachment) ─────────────
+    return Results.File(record.Path, contentType);
+});
 
 
 app.Run();
