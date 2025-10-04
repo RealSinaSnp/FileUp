@@ -5,8 +5,7 @@ using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 
-public sealed class BasicAuthHandler
-    : AuthenticationHandler<AuthenticationSchemeOptions>
+public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     public BasicAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> opts,
@@ -43,28 +42,30 @@ public sealed class BasicAuthHandler
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        /* look for header */
+        // look for header
         if (!Request.Headers.ContainsKey("Authorization"))
             return Task.FromResult(AuthenticateResult.NoResult());
 
-        var header = AuthenticationHeaderValue.Parse(
-                         Request.Headers["Authorization"]);
+        // prevent null ref
+        var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+        if (string.IsNullOrEmpty(authHeader))
+            return Task.FromResult(AuthenticateResult.NoResult());
+        var header = AuthenticationHeaderValue.Parse(authHeader);
+
         if (!"Basic".Equals(header.Scheme, StringComparison.OrdinalIgnoreCase))
-            return Task.FromResult(
-                AuthenticateResult.Fail("Only Basic authentication."));
+            return Task.FromResult(AuthenticateResult.Fail("Only Basic authentication."));
 
         string user, pass;
         try
         {
             var value = Encoding.UTF8
-                .GetString(Convert.FromBase64String(header.Parameter ?? ""));
+                        .GetString(Convert.FromBase64String(header.Parameter ?? ""));
             var parts = value.Split(':', 2);
             user = parts[0]; pass = parts.Length > 1 ? parts[1] : "";
         }
         catch
         {
-            return Task.FromResult(
-                AuthenticateResult.Fail("Invalid Basic header"));
+            return Task.FromResult(AuthenticateResult.Fail("Invalid Basic header"));
         }
 
         // load from secret.json
@@ -73,20 +74,18 @@ public sealed class BasicAuthHandler
 
 
         if (user != ADMIN_USER || pass != ADMIN_PASS)
-            return Task.FromResult(
-                AuthenticateResult.Fail("Bad credentials"));
+            return Task.FromResult(AuthenticateResult.Fail("Bad credentials"));
 
         if (!AdminSessionManager.IsSessionValid(user))
         {
-            // session expired or new login → reset timer
+            // session expired or new login -> reset timer
             AdminSessionManager.StartSession(user);
             return Task.FromResult(AuthenticateResult.Fail("Session expired"));
         }
 
         var claims = new[] { new Claim(ClaimTypes.Name, user) };
         var id = new ClaimsIdentity(claims, Scheme.Name);
-        var ticket = new AuthenticationTicket(
-                          new ClaimsPrincipal(id), Scheme.Name);
+        var ticket = new AuthenticationTicket(new ClaimsPrincipal(id), Scheme.Name);
 
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
