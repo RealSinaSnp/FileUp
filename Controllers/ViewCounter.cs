@@ -11,7 +11,7 @@ namespace FileUp.Controllers
         {
             var db = RedisConnector.DB;
             long views = db.StringIncrement(fileName);
-            Console.WriteLine($"[ViewCounter] {fileName} has been viewed {views} times.");
+            Logger.Log($"[ViewCounter] {fileName} has been viewed {views} times.");
             return views;
         }
 
@@ -28,7 +28,7 @@ namespace FileUp.Controllers
         {
             var db = RedisConnector.DB;
             db.KeyDelete(fileName);
-            Console.WriteLine($"[ViewCounter] View count for {fileName} reset.");
+            Logger.Log($"[ViewCounter] View count for {fileName} reset.");
         }
     }
 }

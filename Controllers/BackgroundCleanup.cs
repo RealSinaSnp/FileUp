@@ -34,7 +34,7 @@ namespace FileUp.Controllers
 
                         if (nextExpire == null)
                         {
-                            await Task.Delay(5000); // nothing scheduled, chill
+                            await Task.Delay(5000); // if nothing scheduled, chill (in ms)
                             continue;
                         }
 
@@ -51,7 +51,7 @@ namespace FileUp.Controllers
 
                                 expiryQueue.Remove(expireTime);
 
-                                Console.WriteLine("[BackgroundCleanup] Current expiryQueue:");
+                                Logger.Log("[BackgroundCleanup] Current expiryQueue:");
                                 foreach (var KeyValue in expiryQueue)
                                 {
                                     Console.WriteLine($"  {KeyValue.Key:u} <-> {string.Join(", ", KeyValue.Value)}");
@@ -93,6 +93,5 @@ namespace FileUp.Controllers
                 }
             });
         }
-
     }
 }

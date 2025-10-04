@@ -55,10 +55,15 @@ public static class APIService
 
             var url = $"{ctx.Request.Scheme}://{ctx.Request.Host}/files/public/{ext.TrimStart('.')}/{safeName}";
 
-            // ✅ safe with ConcurrentDictionary
-            fileStore[safeName] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
+            // Optional maxViews
+            int? maxViews = null;
+            if (form.TryGetValue("maxViews", out var maxViewsVal) && int.TryParse(maxViewsVal, out var parsedMaxViews))
+                maxViews = Math.Max(parsedMaxViews, 1); // at least 1
 
-            return Results.Ok(new { fileName = safeName, size = file.Length, url, expireAt });
+            // ✅ safe with ConcurrentDictionary
+            fileStore[safeName] = new FileRecord { Path = fullPath, ExpireAt = expireAt, MaxViews = maxViews };
+
+            return Results.Ok(new { fileName = safeName, size = file.Length, url, expireAt, maxViews });
         })
         .DisableAntiforgery();
     }

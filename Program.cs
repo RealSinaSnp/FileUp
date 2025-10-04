@@ -247,6 +247,7 @@ public record FileRecord
 {
     public string Path { get; set; } = default!;
     public DateTime? ExpireAt { get; set; } // null = forever
+    public int? MaxViews { get; set; }      // null = unlimited
 }
 
 
