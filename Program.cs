@@ -16,27 +16,23 @@ string prodPath = "/var/lib/fileup/uploads";
 string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 string BASE_UPLOADS;
 int port;
-Console.Error.WriteLine("[BOOT] Program started (stderr test).");
-Logger.Log($"[Welcome] FileUp servce started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+Console.WriteLine($"[BOOT] FileUp servce started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
 if (Directory.Exists(prodPath))
 {
     BASE_UPLOADS = prodPath;
     port = 4000;
     Console.WriteLine($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
-    Console.WriteLine($"[INFO] Binding to port {port}");
 }
 else if (Directory.Exists(devPath))
 {
     BASE_UPLOADS = devPath;
     port = 5057;
     Console.WriteLine($"[INFO] Using development uploads directory: {BASE_UPLOADS}");
-    Console.WriteLine($"[INFO] Binding to port {port}");
 }
 else
 {
     throw new Exception("No valid upload directory found!");
 }
-Console.WriteLine($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
 
 
 

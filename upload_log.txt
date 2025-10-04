@@ -23,3 +23,7 @@
 [2025-10-04 16:14:13] [UploadService] Incoming file.FileName='empty.txt', originalName='empty', ext='.txt'
 [2025-10-04 16:17:03] [Welcome] FileUp servce started at 2025-10-04 16:17:03 UTC
 [2025-10-04 16:17:10] [UploadService] Incoming file.FileName='empty.txt', originalName='empty', ext='.txt'
+[2025-10-04 16:56:36] [Welcome] FileUp servce started at 2025-10-04 16:56:36 UTC
+[2025-10-04 16:58:21] [Welcome] FileUp servce started at 2025-10-04 16:58:21 UTC
+[2025-10-04 16:58:41] [UploadService] Incoming file.FileName='empty.txt', originalName='empty', ext='.txt'
+[2025-10-04 17:00:21] [UploadService] Incoming file.FileName='empty.txt', originalName='empty', ext='.txt'
