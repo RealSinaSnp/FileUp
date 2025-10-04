@@ -11,8 +11,8 @@ public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchem
         IOptionsMonitor<AuthenticationSchemeOptions> opts,
         ILoggerFactory logger,
         UrlEncoder encoder,
-        TimeProvider timeProvider)
-        : base(opts, logger, encoder, timeProvider) { }
+        ISystemClock clock)
+        : base(opts, logger, encoder, clock) { }
 
     protected override async Task HandleChallengeAsync(AuthenticationProperties props)
     {
