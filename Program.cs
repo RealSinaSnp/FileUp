@@ -10,24 +10,28 @@ using Microsoft.AspNetCore.Diagnostics;
 using System.Text.Json.Serialization;
 using System.Linq;
 
+AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+{
+    Logger.Log("[BOOT] FileUp shutting down!");
+};
 
 /* ── constants ─────────────────────────────────────────── */
 string prodPath = "/var/lib/fileup/uploads";
 string devPath = "C:\\Users\\ssasa\\Desktop\\fileup\\FileUp\\uploads";
 string BASE_UPLOADS;
 int port;
-Console.WriteLine($"[BOOT] FileUp servce started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+Logger.Log($"[BOOT] FileUp servce started at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
 if (Directory.Exists(prodPath))
 {
     BASE_UPLOADS = prodPath;
     port = 4000;
-    Console.WriteLine($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
+    Logger.Log($"[INFO] Using production uploads directory: {BASE_UPLOADS}");
 }
 else if (Directory.Exists(devPath))
 {
     BASE_UPLOADS = devPath;
     port = 5057;
-    Console.WriteLine($"[INFO] Using development uploads directory: {BASE_UPLOADS}");
+    Logger.Log($"[INFO] Using development uploads directory: {BASE_UPLOADS}");
 }
 else
 {
@@ -71,8 +75,7 @@ lock (expiryLock)
 // Start background cleanup with thread-safe access
 FileUp.Controllers.BackgroundCleanup.Start(FileStore, expiryQueue, expiryLock);
 
-Console.WriteLine($"[INFO] Startup scan completed. {FileStore.Count} files registered for cleanup.");
-
+Logger.Log($"[INFO] Startup scan completed. {FileStore.Count} files registered for cleanup.");
 
 
 /* ── boilerplate ───────────────────────────────────────── */
@@ -82,7 +85,7 @@ builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange
 
 // builder.WebHost.UseUrls("http://localhost:{port}");
 builder.WebHost.UseUrls($"http://localhost:{port}"); // listen on all interfaces
-Console.WriteLine($"[INFO] Binding to port {port}");
+Logger.Log($"[INFO] Binding to port {port}");
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
