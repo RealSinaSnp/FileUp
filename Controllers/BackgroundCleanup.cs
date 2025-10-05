@@ -34,7 +34,7 @@ namespace FileUp.Controllers
 
                         if (nextExpire == null)
                         {
-                            await Task.Delay(1*3600*1000); // if nothing scheduled, chill (in ms)
+                            await Task.Delay(1*3600*1000); // if nothing scheduled, chill for 1h (in ms)
                             continue;
                         }
 
@@ -80,7 +80,7 @@ namespace FileUp.Controllers
                                 }
                                 else
                                 {
-                                    Console.WriteLine("  (empty)");
+                                    Console.WriteLine(" (empty)");
                                 }
                             }
                         }

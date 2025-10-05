@@ -1,6 +1,9 @@
 using System.Net;
 using System.Collections.Concurrent;
 
+// to let other servers use the API to upload files
+// max epire is 24h
+
 public static class APIService
 {
     public static void MapAPIUploadEndpoints(this IEndpointRouteBuilder app,
@@ -23,7 +26,7 @@ public static class APIService
                 return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
             if (file.Length > maxFileSize)
-                return Results.Json(new { error = $"File size exceeds limit of {maxFileSize / (1024*1024)} MB" }, statusCode: (int)HttpStatusCode.Forbidden);
+                return Results.Json(new { error = $"File size exceeds limit of {maxFileSize / (1024 * 1024)} MB" }, statusCode: (int)HttpStatusCode.Forbidden);
 
             var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
             if (!allowedExt.Contains(ext))
