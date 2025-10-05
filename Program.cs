@@ -228,18 +228,24 @@ app.MapGet("/admin", () =>
 app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
 {
     if (!FileStore.TryGetValue(fileName, out var record))
-        return Results.NotFound();
+        return Results.Json(new { error = "error 404 - file not found" }, statusCode: 404);
 
     // Check expiration
     if (record.ExpireAt.HasValue && DateTime.UtcNow > record.ExpireAt.Value)
-        return Results.StatusCode(410); // Gone
+        return Results.Json(
+            new { error = "error 410 - the file's expiration time has been reached" },
+            statusCode: 410
+        );
 
     // Increment and check MaxViews
     if (record.MaxViews.HasValue)
     {
         var views = ViewCounter.IncrementView(fileName);
         if (views > record.MaxViews.Value)
-            return Results.StatusCode(403); // Forbidden
+            return Results.Json(
+                new { error = $"error 403 - max views of {record.MaxViews.Value} reached" },
+                statusCode: 403
+            );
     }
     else
     {
