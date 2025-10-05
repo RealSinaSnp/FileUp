@@ -50,12 +50,6 @@ namespace FileUp.Controllers
                                     continue;
 
                                 expiryQueue.Remove(expireTime);
-
-                                Logger.Log("[BackgroundCleanup] Current expiryQueue:");
-                                foreach (var KeyValue in expiryQueue)
-                                {
-                                    Console.WriteLine($"  {KeyValue.Key:u} <-> {string.Join(", ", KeyValue.Value)}");
-                                }
                             }
 
                             foreach (var fname in filesToDelete)
@@ -76,10 +70,23 @@ namespace FileUp.Controllers
                                     }
                                 }
                             }
+                            lock (expiryLock)
+                            {
+                                Logger.Log("[BackgroundCleanup] Current expiryQueue:");
+                                if (expiryQueue.Any())
+                                {
+                                    foreach (var kv in expiryQueue)
+                                        Console.WriteLine($"  {kv.Key:u} <-> {string.Join(", ", kv.Value)}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine("  (empty)");
+                                }
+                            }
                         }
                         else
                         {
-                            // check again soon, don’t sleep too long
+                            // wait until 'closer to expiry' or a 'short delay'
                             var shortDelay = TimeSpan.FromSeconds(10);
                             var wait = expireTime - now < shortDelay ? expireTime - now : shortDelay;
                             await Task.Delay(wait);
