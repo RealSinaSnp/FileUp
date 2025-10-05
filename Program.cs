@@ -232,25 +232,47 @@ app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
 
     // Check expiration
     if (record.ExpireAt.HasValue && DateTime.UtcNow > record.ExpireAt.Value)
+    {
+        // Remove from FileStore and delete file
+        if (FileStore.TryRemove(fileName, out var rec))
+        {
+            try
+            {
+                if (File.Exists(rec.Path))
+                {
+                    File.Delete(rec.Path);
+                    Console.WriteLine($"[FileAccess] Expired file deleted on access: {rec.Path}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[FileAccess] Failed to delete expired file {rec.Path}: {ex.Message}");
+            }
+        }
         return Results.Json(
-            new { error = "error 410 - the file's expiration time has been reached" },
+            new
+            {
+                error = "error 410 - the file's expiration time has been reached. Attempting to early deletion"
+            },
             statusCode: 410
         );
+    }
 
     // Increment and check MaxViews
-    if (record.MaxViews.HasValue)
-    {
-        var views = ViewCounter.IncrementView(fileName);
-        if (views > record.MaxViews.Value)
-            return Results.Json(
-                new { error = $"error 403 - max views of {record.MaxViews.Value} reached" },
-                statusCode: 403
-            );
-    }
-    else
-    {
-        ViewCounter.IncrementView(fileName);
-    }
+        if (record.MaxViews.HasValue)
+        {
+            var views = ViewCounter.IncrementView(fileName);
+            if (views > record.MaxViews.Value)
+                return Results.Json(
+                    new { error = $"error 403 - max views of {record.MaxViews.Value} reached"
+                    },
+                    statusCode: 403
+                );
+        }
+        else
+        {
+            ViewCounter.IncrementView(fileName);
+        }
 
     // check if file can be opened in browser
     // othervise download

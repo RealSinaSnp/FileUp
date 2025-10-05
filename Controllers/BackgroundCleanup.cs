@@ -34,7 +34,7 @@ namespace FileUp.Controllers
 
                         if (nextExpire == null)
                         {
-                            await Task.Delay(5000); // if nothing scheduled, chill (in ms)
+                            await Task.Delay(1*3600*1000); // if nothing scheduled, chill (in ms)
                             continue;
                         }
 
@@ -95,7 +95,7 @@ namespace FileUp.Controllers
                     catch (Exception ex)
                     {
                         Console.WriteLine($"[BackgroundCleanup] Loop error: {ex.Message}");
-                        await Task.Delay(5000);
+                        await Task.Delay(1*3600*1000); // on error, chill for a while (in ms)
                     }
                 }
             });
