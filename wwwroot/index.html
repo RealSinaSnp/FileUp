@@ -22,6 +22,32 @@
         #result { margin-top: 20px; padding: 10px; border-radius: 5px; }
         .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        /* New styles for the options */
+        .options-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            padding: 15px;
+            border-top: 1px solid #333; /* Separator line */
+            text-align: left;
+        }
+        /* Style for all number inputs in this group */
+        .options-group input[type="number"] {
+            display: flex;
+            width: 60px;
+            padding: 5px;
+            border: 1px solid #555;
+            border-radius: 3px;
+            background-color: #222;
+            color: white;
+        }
+        /* Chrome, Safari, Edge, Opera */
+        .options-group input::-webkit-outer-spin-button,
+        .options-group input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -30,18 +56,19 @@
         <h3>Drop files here</h3>
         <input type="file" id="fileInput" />
         <br>
-        <label>
-            Expire after (minutes):
-            <input type="number" id="expireMinutes" min="1" placeholder="e.g. 10" style="width:80px; margin-left:5px;" />
-        </label>
-        <br><br>
-        <label>
-            Max views:
-            <input type="number" id="maxViews" min="1" placeholder="e.g. 3" style="width:80px; margin-left:5px;" />
-        </label>
-        <br><br>
-        <button onclick="event.stopPropagation(); uploadFile()">Upload File</button>
+        <div class="options-group">
+            <strong>Expire Time:</strong>
+            <div class="input">
+                <input type="number" id="expireMinutes" min="1" placeholder="e.g. 10" onclick="event.stopPropagation();"/>
+            </div>
+
+            <strong>Max Views:</strong>
+            <div class="input">
+                <input type="number" id="maxViews" min="1" placeholder="e.g. 3" onclick="event.stopPropagation();"/>
+            </div>
+        </div>
     </div>
+    <button onclick="event.stopPropagation(); uploadFile()">Upload File</button>
     <div id="result"></div>
 
     <script src="message.js"></script>

@@ -33,12 +33,12 @@ async function uploadFile() {
             
             const viewsTxt = dat.maxViews
                 ? `<br>Max Views: <strong>${dat.maxViews}</strong>`
-                : "";
+                : "<br>Max Views: <strong>none</strong>";
 
             show(
                 `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
                 `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>` +
-                expTxt,
+                expTxt +
                 viewsTxt,
                 "success"
             );
