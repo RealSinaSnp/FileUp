@@ -55,20 +55,15 @@ public static class UploadService
             Directory.CreateDirectory(dir);
 
             // ── optional form fields ───────────────────────────────
-            int? expireMinutes = null;
+            int expireMinutes = 1;
             int? maxViews = null;
 
             if (form.TryGetValue("expireMinutes", out var expStr) && int.TryParse(expStr, out var expVal))
-                expireMinutes = expVal;
+                expireMinutes = Math.Clamp(expVal, 1, 60 * 24); // keep it between 1 min to 24h
 
             if (form.TryGetValue("maxViews", out var mvStr) && int.TryParse(mvStr, out var mvVal))
                 maxViews = mvVal;
 
-            // make sure expireMinutes and maxViews are within defined limits
-            if (expireMinutes.HasValue)
-            {
-                expireMinutes = Math.Clamp(expireMinutes.Value, 1, 60 * 24); // 1 min to 24h
-            }
             if (maxViews.HasValue)
             {
                 maxViews = Math.Clamp(maxViews.Value, 1, 200); // limit to 100
@@ -84,7 +79,12 @@ public static class UploadService
             DateTime? expireAt = null;
             if (!isAdmin)
             {
-                expireAt = DateTime.UtcNow.AddMinutes(1); // configurable expiry
+                expireAt = DateTime.UtcNow.AddMinutes(expireMinutes);
+            }
+            else
+            {
+                expireAt = null; // do it again cause i feel like it
+                Logger.Log($"[Admin] file uploaded as admin. filename='{file.FileName}'");
             }
 
             // filename: originalName_yyyyMMddHHmmss.ext
