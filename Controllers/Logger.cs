@@ -38,6 +38,6 @@ public static class Logger
         {
             File.AppendAllText(logFile, line + Environment.NewLine);
         }
-        Logger.Log(message);
+        Console.WriteLine(message);
     }
 }

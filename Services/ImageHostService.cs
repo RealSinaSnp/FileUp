@@ -46,7 +46,7 @@ public static class ImghostService
             catch (Exception ex)
             {
                 Logger.Log("🔥 EXCEPTION in /api/files/imghost:");
-                Logger.Log(ex);
+                Logger.Log(ex.ToString());
                 return Results.Problem("Server exploded. Check console.");
             }
         });

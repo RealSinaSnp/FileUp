@@ -30,6 +30,16 @@
         <h3>Drop files here</h3>
         <input type="file" id="fileInput" />
         <br>
+        <label>
+            Expire after (minutes):
+            <input type="number" id="expireMinutes" min="1" placeholder="e.g. 10" style="width:80px; margin-left:5px;" />
+        </label>
+        <br><br>
+        <label>
+            Max views:
+            <input type="number" id="maxViews" min="1" placeholder="e.g. 3" style="width:80px; margin-left:5px;" />
+        </label>
+        <br><br>
         <button onclick="event.stopPropagation(); uploadFile()">Upload File</button>
     </div>
     <div id="result"></div>

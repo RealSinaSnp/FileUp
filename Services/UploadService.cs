@@ -17,6 +17,7 @@ public static class UploadService
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
             var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
+            var form = await ctx.Request.ReadFormAsync();
 
             if (file == null || file.Length == 0)
                 return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
@@ -42,6 +43,16 @@ public static class UploadService
             var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
             Directory.CreateDirectory(dir);
 
+            // ── optional form fields ───────────────────────────────
+            int? expireMinutes = null;
+            int? maxViews = null;
+
+            if (form.TryGetValue("expireMinutes", out var expStr) && int.TryParse(expStr, out var expVal))
+                expireMinutes = expVal;
+
+            if (form.TryGetValue("maxViews", out var mvStr) && int.TryParse(mvStr, out var mvVal))
+                maxViews = mvVal;
+
             var originalName = Path.GetFileNameWithoutExtension(file.FileName);
             DateTime? expireAt = null;
             if (!isAdmin)
@@ -58,8 +69,8 @@ public static class UploadService
             await using var fs = new FileStream(fullPath, FileMode.Create);
             await file.CopyToAsync(fs);
 
-            // Safe with ConcurrentDictionary
-            fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt };
+            // add to ConcurrentDictionary
+            fileStore[fname] = new FileRecord { Path = fullPath, ExpireAt = expireAt, MaxViews = maxViews };
             if (expireAt.HasValue)
             {
                 lock (expiryLock)
@@ -78,7 +89,14 @@ public static class UploadService
             Logger.Log($"[UploadService] Incoming file.FileName='{originalFullName}', expireAt='{expireAt}, url='{url}'");
 
 
-            return Results.Ok(new { fileName = fname, size = file.Length, url, expireAt });
+            return Results.Ok(new
+            {
+                fileName = fname,
+                size = file.Length,
+                url,
+                expireAt,
+                maxViews
+            });
         })
         .DisableAntiforgery()
         .RequireRateLimiting("uploadPolicy");

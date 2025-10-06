@@ -7,6 +7,13 @@ async function uploadFile() {
     const fd = new FormData();
     fd.append("file", inp.files[0]);
 
+    // grab optional inputs
+    const expireMinutes = document.getElementById("expireMinutes")?.value;
+    const maxViews = document.getElementById("maxViews")?.value;
+
+    if (expireMinutes) fd.append("expireMinutes", expireMinutes);
+    if (maxViews) fd.append("maxViews", maxViews);
+
     try {
         const r = await fetch("/api/files/upload", { method: "POST", body: fd });
         let dat;
@@ -23,11 +30,16 @@ async function uploadFile() {
             const expTxt = dat.expireAt
                 ? `<br>Expires at: <strong>${new Date(dat.expireAt).toLocaleString()}</strong>`
                 : "<br>Expires: <strong>Never</strong>";
+            
+            const viewsTxt = dat.maxViews
+                ? `<br>Max Views: <strong>${dat.maxViews}</strong>`
+                : "";
 
             show(
                 `Uploaded!<br>Name: <code>${escape(dat.fileName)}</code><br>` +
                 `Size: ${nice}<br>Link: <a href="${dat.url}" target="_blank">${dat.url}</a>` +
                 expTxt,
+                viewsTxt,
                 "success"
             );
         } else {
