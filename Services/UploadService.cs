@@ -18,9 +18,19 @@ public static class UploadService
         {
             var isAdmin = ctx.User.Identity?.IsAuthenticated == true;
             var form = await ctx.Request.ReadFormAsync();
+            var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
 
             if (file == null || file.Length == 0)
                 return Results.Json(new { error = "No file selected" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
+
+            if (file.ContentType.StartsWith("application/x-msdownload") ||
+                file.ContentType.Contains("exe") ||
+                file.ContentType.Contains("php"))
+            {
+                Logger.Log($"[SECURITY] Suspicious upload attempt from {ip}: '{file.FileName}' ({file.ContentType})");
+                return Results.Json(new { error = "Suspicious file type detected" }, statusCode: (int)HttpStatusCode.Forbidden);
+            }
+
 
             if (!isAdmin && file.Length > maxFileGuest)
                 return Results.Json(new { error = "Guests can upload max 3 MB" }, statusCode: (int)HttpStatusCode.Forbidden);
@@ -31,15 +41,16 @@ public static class UploadService
             if (!allowedExt.Contains(ext))
                 return Results.Json(new { error = "File type not allowed" }, statusCode: (int)HttpStatusCode.Forbidden);
 
-            var ip = ctx.Connection.RemoteIpAddress?.ToString() ?? "x";
             if (!isAdmin && !UploadCounter.CheckAndIncrement(ip))
                 return Results.Json(new { error = "Rate limit exceeded. Try again later." }, statusCode: (int)HttpStatusCode.TooManyRequests);
 
             long current = Directory.EnumerateFiles(baseUploads, "*", SearchOption.AllDirectories)
                                     .Sum(p => new FileInfo(p).Length);
             if (current + file.Length > maxStorage)
+            {
+                Logger.Log($"[SECURITY] Suspicious upload attempt from {ip}: '{file.FileName}' ({file.ContentType})");
                 return Results.Json(new { error = "Storage limit exceeded. (Server storage is full)" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
-
+            }
             var dir = Path.Combine(baseUploads, ext.TrimStart('.'));
             Directory.CreateDirectory(dir);
 
@@ -53,7 +64,23 @@ public static class UploadService
             if (form.TryGetValue("maxViews", out var mvStr) && int.TryParse(mvStr, out var mvVal))
                 maxViews = mvVal;
 
+            // make sure expireMinutes and maxViews are within defined limits
+            if (expireMinutes.HasValue)
+            {
+                expireMinutes = Math.Clamp(expireMinutes.Value, 1, 60 * 24); // 1 min to 24h
+            }
+            if (maxViews.HasValue)
+            {
+                maxViews = Math.Clamp(maxViews.Value, 1, 200); // limit to 100
+            }
+
+
+            // Remove any weird or dangerous characters from original filename
             var originalName = Path.GetFileNameWithoutExtension(file.FileName);
+            originalName = string.Join("_", originalName.Split(Path.GetInvalidFileNameChars()));
+            originalName = System.Text.RegularExpressions.Regex.Replace(originalName, @"[^a-zA-Z0-9_-]", "_");
+
+
             DateTime? expireAt = null;
             if (!isAdmin)
             {
