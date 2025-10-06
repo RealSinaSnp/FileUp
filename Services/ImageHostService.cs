@@ -45,8 +45,8 @@ public static class ImghostService
             }
             catch (Exception ex)
             {
-                Console.WriteLine("🔥 EXCEPTION in /api/files/imghost:");
-                Console.WriteLine(ex);
+                Logger.Log("🔥 EXCEPTION in /api/files/imghost:");
+                Logger.Log(ex);
                 return Results.Problem("Server exploded. Check console.");
             }
         });

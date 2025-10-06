@@ -59,7 +59,7 @@ form.Add(new StreamContent(fileStream), "file", "file.png");
 
 var response = await client.PostAsync("https://upload.sinasnp.com/api/public/upload", form);
 var json = await response.Content.ReadAsStringAsync();
-Console.WriteLine(json); // contains the URL
+Logger.Log(json); // contains the URL
 ```
 
 <br/>

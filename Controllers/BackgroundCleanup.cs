@@ -61,12 +61,12 @@ namespace FileUp.Controllers
                                         if (File.Exists(rec.Path))
                                         {
                                             File.Delete(rec.Path);
-                                            Console.WriteLine($"[BackgroundCleanup] Deleted expired file: {rec.Path}");
+                                            Logger.Log($"[BackgroundCleanup] Deleted expired file: {rec.Path}");
                                         }
                                     }
                                     catch (Exception ex)
                                     {
-                                        Console.WriteLine($"[BackgroundCleanup] Failed to delete {rec.Path}: {ex.Message}");
+                                        Logger.Log($"[BackgroundCleanup] Failed to delete {rec.Path}: {ex.Message}");
                                     }
                                 }
                             }
@@ -76,11 +76,11 @@ namespace FileUp.Controllers
                                 if (expiryQueue.Any())
                                 {
                                     foreach (var kv in expiryQueue)
-                                        Console.WriteLine($"  {kv.Key:u} <-> {string.Join(", ", kv.Value)}");
+                                        Logger.Log($"  {kv.Key:u} <-> {string.Join(", ", kv.Value)}");
                                 }
                                 else
                                 {
-                                    Console.WriteLine(" (empty)");
+                                    Logger.Log(" (empty)");
                                 }
                             }
                         }
@@ -94,7 +94,7 @@ namespace FileUp.Controllers
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[BackgroundCleanup] Loop error: {ex.Message}");
+                        Logger.Log($"[BackgroundCleanup] Loop error: {ex.Message}");
                         await Task.Delay(1*3600*1000); // on error, chill for a while (in ms)
                     }
                 }

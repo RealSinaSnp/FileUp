@@ -40,11 +40,11 @@ namespace FileUp.Controllers
                     try
                     {
                         File.Delete(filePath);
-                        Console.WriteLine($"[StartupScan] Deleted expired file: {filePath}");
+                        Logger.Log($"[StartupScan] Deleted expired file: {filePath}");
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"[StartupScan] Failed to delete {filePath}: {ex.Message}");
+                        Logger.Log($"[StartupScan] Failed to delete {filePath}: {ex.Message}");
                     }
                     continue;
                 }

@@ -241,12 +241,12 @@ app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
                 if (File.Exists(rec.Path))
                 {
                     File.Delete(rec.Path);
-                    Console.WriteLine($"[FileAccess] Expired file deleted on access: {rec.Path}");
+                    Logger.Log($"[FileAccess] Expired file deleted on access: {rec.Path}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[FileAccess] Failed to delete expired file {rec.Path}: {ex.Message}");
+                Logger.Log($"[FileAccess] Failed to delete expired file {rec.Path}: {ex.Message}");
             }
         }
         return Results.Json(
