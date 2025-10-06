@@ -6,9 +6,12 @@ using System.Collections.Concurrent;
 
 public static class APIService
 {
-    public static void MapAPIUploadEndpoints(this IEndpointRouteBuilder app,
+    public static void MapAPIUploadEndpoints(
+        this IEndpointRouteBuilder app,
         string baseUploads,
         ConcurrentDictionary<string, FileRecord> fileStore,
+        SortedDictionary<DateTime, List<string>> expiryQueue,
+        object expiryLock,
         HashSet<string> allowedExt,
         long maxStorage,
         long maxFileSize)
@@ -64,9 +67,34 @@ public static class APIService
                 maxViews = Math.Max(parsedMaxViews, 1); // at least 1
 
             // ✅ safe with ConcurrentDictionary
-            fileStore[safeName] = new FileRecord { Path = fullPath, ExpireAt = expireAt, MaxViews = maxViews };
+            fileStore[safeName] = new FileRecord
+            {
+                Path = fullPath,
+                ExpireAt = expireAt,
+                MaxViews = maxViews
+            };
 
-            return Results.Ok(new { fileName = safeName, size = file.Length, url, expireAt, maxViews });
+            // ✅ Register in expiryQueue (for BackgroundCleanup)
+            lock (expiryLock)
+            {
+                if (!expiryQueue.TryGetValue(expireAt, out var list))
+                {
+                    list = new List<string>();
+                    expiryQueue[expireAt] = list;
+                }
+                list.Add(safeName);
+            }
+
+            Logger.Log($"[APIService] File uploaded via /api/public/upload: {safeName}, expires at {expireAt:u}");
+
+            return Results.Ok(new
+            {
+                fileName = safeName,
+                size = file.Length,
+                url,
+                expireAt,
+                maxViews
+            });
         })
         .DisableAntiforgery();
     }

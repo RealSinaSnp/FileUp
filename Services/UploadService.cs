@@ -5,14 +5,14 @@ using System.Collections.Concurrent;
 public static class UploadService
 {
     public static void MapUploadEndpoints(
-                                            this IEndpointRouteBuilder app,
-                                            string baseUploads,
-                                            ConcurrentDictionary<string, FileRecord> fileStore,
-                                            SortedDictionary<DateTime, List<string>> expiryQueue,
-                                            object expiryLock,
-                                            HashSet<string> allowedExt,
-                                            long maxStorage,
-                                            long maxFileGuest)
+        this IEndpointRouteBuilder app,
+        string baseUploads,
+        ConcurrentDictionary<string, FileRecord> fileStore,
+        SortedDictionary<DateTime, List<string>> expiryQueue,
+        object expiryLock,
+        HashSet<string> allowedExt,
+        long maxStorage,
+        long maxFileGuest)
     {
         app.MapPost("/api/files/upload", async (IFormFile file, HttpContext ctx) =>
         {
