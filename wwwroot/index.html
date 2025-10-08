@@ -57,18 +57,19 @@
         <input type="file" id="fileInput" />
         <br>
         <div class="options-group">
-            <strong>Expire Time:</strong>
+            <strong style="margin-top:5px">Expire Time (minutes):</strong>
             <div class="input">
                 <input type="number" id="expireMinutes" min="1" placeholder="e.g. 10" onclick="event.stopPropagation();"/>
             </div>
 
-            <strong>Max Views:</strong>
+            <strong style="margin-top:5px">Max Views:</strong>
             <div class="input">
                 <input type="number" id="maxViews" min="1" placeholder="e.g. 3" onclick="event.stopPropagation();"/>
             </div>
         </div>
+        <br><br>
+        <button onclick="event.stopPropagation(); uploadFile()">Upload File</button>
     </div>
-    <button onclick="event.stopPropagation(); uploadFile()">Upload File</button>
     <div id="result"></div>
 
     <script src="message.js"></script>
