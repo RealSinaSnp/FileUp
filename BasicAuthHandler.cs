@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 
 public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
@@ -19,19 +20,17 @@ public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchem
         Response.Headers["WWW-Authenticate"] = "Basic realm=\"UploadAdmin\"";
         await base.HandleChallengeAsync(props);
     }
-    
+
 
 // in-memory session manager for admin
     public static class AdminSessionManager
     {
-        private static readonly Dictionary<string, DateTime> _sessions = new();
+        private static readonly ConcurrentDictionary<string, DateTime> _sessions = new();
 
         public static bool IsSessionValid(string user)
         {
-            if (!_sessions.TryGetValue(user, out var loginTime))
-                return false;
-
-            return DateTime.UtcNow - loginTime < TimeSpan.FromMinutes(4);
+            return _sessions.TryGetValue(user, out var loginTime)
+                && DateTime.UtcNow - loginTime < TimeSpan.FromMinutes(4);
         }
 
         public static void StartSession(string user)
