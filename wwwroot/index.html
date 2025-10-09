@@ -30,6 +30,7 @@
             margin-top: 20px;
             padding: 15px;
             border-top: 1px solid #333; /* Separator line */
+            border-bottom: 1px solid #333; /* Separator line */
             text-align: left;
         }
         /* Style for all number inputs in this group */
@@ -58,7 +59,7 @@
         <br>
         <div class="options-group">
             <strong style="margin-top:5px">Expire Time (minutes):</strong>
-            <div class="input">
+            <div class="input" style="margin-right:15px">
                 <input type="number" id="expireMinutes" min="1" placeholder="e.g. 10" onclick="event.stopPropagation();"/>
             </div>
 
