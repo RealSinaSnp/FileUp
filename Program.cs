@@ -296,10 +296,11 @@ public record ShortLinkRecord
 }
 
 // from Services/ImageHostService.cs
-record ShortLinkCreateRequest
+public record ShortLinkCreateRequest
 {
     public string Url { get; set; } = default!;
-    public int Expire { get; set; }
+    public int Expire { get; set; } // minutes
+    public int MaxViews { get; set; } // optional
 }
 
 // from Services/UploadService.cs
