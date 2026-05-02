@@ -39,8 +39,13 @@ public static class ImghostService
                     return Results.Json(new { error = "Server storage full" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
                 // Download image
-                using var http = new HttpClient();
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                };
+                using var http = new HttpClient(handler);
                 http.Timeout = TimeSpan.FromSeconds(15);
+
 
                 byte[] bytes;
                 try
