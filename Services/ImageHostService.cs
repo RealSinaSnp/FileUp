@@ -26,6 +26,10 @@ public static class ImghostService
                 if (!Uri.IsWellFormedUriString(data.Url, UriKind.Absolute))
                     return Results.Json(new { error = "Invalid URL format" }, statusCode: (int)HttpStatusCode.BadRequest);
 
+		// Add this new security check:
+                if (!data.Url.StartsWith("https://img.sinasnp.com/"))
+                    return Results.Json(new { error = "Domain not allowed" }, statusCode: (int)HttpStatusCode.Forbidden);
+
                 var ext = Path.GetExtension(data.Url).ToLowerInvariant();
                 if (!allowedExt.Contains(ext))
                     return Results.Json(new { error = "File type not allowed" }, statusCode: (int)HttpStatusCode.Forbidden);
@@ -38,13 +42,24 @@ public static class ImghostService
                 if (current > maxStorage)
                     return Results.Json(new { error = "Server storage full" }, statusCode: (int)HttpStatusCode.ExpectationFailed);
 
-                // Download image
+                // Download image with strict domain validation
                 var handler = new HttpClientHandler
                 {
-                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    ServerCertificateCustomValidationCallback = (message, cert, chain, sslPolicyErrors) =>
+                    {
+                        // ONLY bypass SSL checks if the request is going to your specific domain
+                        if (message.RequestUri?.Host == "img.sinasnp.com")
+                        {
+                            return true;
+                        }
+
+                        // For all other websites, enforce standard SSL security
+                        return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
+                    }
                 };
                 using var http = new HttpClient(handler);
                 http.Timeout = TimeSpan.FromSeconds(15);
+
 
 
                 byte[] bytes;
