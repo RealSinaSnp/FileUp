@@ -86,7 +86,11 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("secrets.json", optional: true, reloadOnChange: true);
 
 // builder.WebHost.UseUrls("http://localhost:{port}");
+
+// this was the original. check later for possible mistake. I think it should be this first line
 builder.WebHost.UseUrls($"http://localhost:{port}"); // listen on all interfaces
+// Listen on all interfaces
+builder.WebHost.UseUrls($"[http://0.0.0.0](http://0.0.0.0):{port}");
 Logger.Log($"[INFO] Binding to port {port}");
 
 builder.Services.AddEndpointsApiExplorer();
