@@ -54,7 +54,7 @@ var allowedExt = new HashSet<string> {
     ".ppt", ".pptx", ".tif", ".tiff", ".txt", ".xls", ".xlsx", ".wav"
 };
 const long MAX_STORAGE = 5L * 1024 * 1024 * 1024;
-const long MAX_FILE_GUEST = 3L * 1024 * 1024;
+const long MAX_FILE_GUEST = 6L * 1024 * 1024;
 
 
 
@@ -287,6 +287,19 @@ app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName, HttpC
     // ── Serve file inline (not as attachment) ─────────────
     return Results.File(record.Path, contentType);
 });
+
+// Add this right before app.Run();
+app.MapImghostEndpoints(
+    BASE_UPLOADS,
+    FileStore,
+    expiryQueue,
+    expiryLock,
+    allowedExt,
+    MAX_STORAGE,
+    MAX_FILE_GUEST
+);
+
+
 
 
 app.Run();
