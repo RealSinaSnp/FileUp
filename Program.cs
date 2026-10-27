@@ -225,7 +225,7 @@ app.MapGet("/admin", () =>
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
 
-app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
+app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName, HttpContext ctx) =>
 {
     if (!FileStore.TryGetValue(fileName, out var record))
         return Results.Json(new { error = "error 404 - file not found" }, statusCode: 404);
@@ -279,6 +279,10 @@ app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName) =>
     var provider = new FileExtensionContentTypeProvider();
     if (!provider.TryGetContentType(record.Path, out var contentType))
         contentType = "application/octet-stream"; // fallback
+    
+    // ── Apply Security Headers ─────────────
+    ctx.Response.Headers.Append("Content-Security-Policy", "default-src 'none'; sandbox");
+    ctx.Response.Headers.Append("X-Content-Type-Options", "nosniff");
 
     // ── Serve file inline (not as attachment) ─────────────
     return Results.File(record.Path, contentType);
