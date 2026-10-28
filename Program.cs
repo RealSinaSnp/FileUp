@@ -162,12 +162,6 @@ app.UseAuthorization();
 /* ── middleware ────────────────────────────────────────── */
 app.UseDefaultFiles();
 app.UseStaticFiles();
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(BASE_UPLOADS),
-    RequestPath = "/files",
-    ServeUnknownFileTypes = false
-});
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseRateLimiter();
@@ -229,10 +223,28 @@ app.MapGet("/admin", () =>
     return Results.Content(html, MediaTypeNames.Text.Html);
 }).RequireAuthorization();
 
-app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName, HttpContext ctx) =>
+app.MapGet("/files/{*filePath}", (string filePath, HttpContext ctx) =>
 {
-    if (!FileStore.TryGetValue(fileName, out var record))
+    if (string.IsNullOrWhiteSpace(filePath))
         return Results.Json(new { error = "error 404 - file not found" }, statusCode: 404);
+
+    var fileName = Path.GetFileName(filePath);
+
+    if (!FileStore.TryGetValue(fileName, out var record))
+    {
+        // Fallback for permanent files or pre-existing files under BASE_UPLOADS
+        var candidatePath = Path.GetFullPath(Path.Combine(BASE_UPLOADS, filePath.TrimStart('/')));
+        var normalizedBase = Path.GetFullPath(BASE_UPLOADS);
+        if (candidatePath.StartsWith(normalizedBase, StringComparison.OrdinalIgnoreCase) && File.Exists(candidatePath))
+        {
+            record = new FileRecord { Path = candidatePath, ExpireAt = null, MaxViews = null };
+            FileStore[fileName] = record;
+        }
+        else
+        {
+            return Results.Json(new { error = "error 404 - file not found" }, statusCode: 404);
+        }
+    }
 
     // Check expiration
     if (record.ExpireAt.HasValue && DateTime.UtcNow > record.ExpireAt.Value)
@@ -263,23 +275,25 @@ app.MapGet("/files/public/{ext}/{fileName}", (string ext, string fileName, HttpC
     }
 
     // Increment and check MaxViews
-        if (record.MaxViews.HasValue)
-        {
-            var views = ViewCounter.IncrementView(fileName);
-            if (views > record.MaxViews.Value)
-                return Results.Json(
-                    new { error = $"error 403 - max views of {record.MaxViews.Value} reached"
-                    },
-                    statusCode: 403
-                );
-        }
-        else
-        {
-            ViewCounter.IncrementView(fileName);
-        }
+    if (record.MaxViews.HasValue)
+    {
+        var views = ViewCounter.IncrementView(fileName);
+        if (views > record.MaxViews.Value)
+            return Results.Json(
+                new { error = $"error 403 - max views of {record.MaxViews.Value} reached" },
+                statusCode: 403
+            );
+    }
+    else
+    {
+        ViewCounter.IncrementView(fileName);
+    }
+
+    if (!File.Exists(record.Path))
+        return Results.Json(new { error = "error 404 - file not found on disk" }, statusCode: 404);
 
     // check if file can be opened in browser
-    // othervise download
+    // otherwise download
     var provider = new FileExtensionContentTypeProvider();
     if (!provider.TryGetContentType(record.Path, out var contentType))
         contentType = "application/octet-stream"; // fallback
