@@ -27,15 +27,25 @@ public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchem
     {
         private static readonly ConcurrentDictionary<string, DateTime> _sessions = new();
 
-        public static bool IsSessionValid(string user)
+        public static bool HasExpired(string user)
         {
-            return _sessions.TryGetValue(user, out var loginTime)
-                && DateTime.UtcNow - loginTime < TimeSpan.FromMinutes(4);
+            if (_sessions.TryGetValue(user, out var lastActivity))
+            {
+                // If 4 minutes have passed since last activity, session has expired
+                return DateTime.UtcNow - lastActivity >= TimeSpan.FromMinutes(4);
+            }
+            // No previous session (fresh login)
+            return false;
         }
 
-        public static void StartSession(string user)
+        public static void RecordActivity(string user)
         {
             _sessions[user] = DateTime.UtcNow;
+        }
+
+        public static void InvalidateSession(string user)
+        {
+            _sessions.TryRemove(user, out _);
         }
     }
 
@@ -67,20 +77,29 @@ public sealed class BasicAuthHandler : AuthenticationHandler<AuthenticationSchem
             return Task.FromResult(AuthenticateResult.Fail("Invalid Basic header"));
         }
 
-        // load from secret.json
-        var ADMIN_USER = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminUser"];
-        var ADMIN_PASS = Context.RequestServices.GetRequiredService<IConfiguration>()["AdminPass"];
+        // load from configuration (secrets.json, environment variables, appsettings.json)
+        var config = Context.RequestServices.GetRequiredService<IConfiguration>();
+        var adminUser = config["AdminUser"];
+        var adminPass = config["AdminPass"];
 
+        if (string.IsNullOrEmpty(adminUser) || string.IsNullOrEmpty(adminPass))
+        {
+            global::Logger.Log("[SECURITY] Admin credentials are not configured in secrets.json or configuration!");
+            return Task.FromResult(AuthenticateResult.Fail("Admin credentials not configured"));
+        }
 
-        if (user != ADMIN_USER || pass != ADMIN_PASS)
+        if (user != adminUser || pass != adminPass)
             return Task.FromResult(AuthenticateResult.Fail("Bad credentials"));
 
-        if (!AdminSessionManager.IsSessionValid(user))
+        // Check if existing session has timed out (> 4 minutes idle)
+        if (AdminSessionManager.HasExpired(user))
         {
-            // session expired or new login -> reset timer
-            AdminSessionManager.StartSession(user);
-            return Task.FromResult(AuthenticateResult.Fail("Session expired"));
+            AdminSessionManager.InvalidateSession(user);
+            return Task.FromResult(AuthenticateResult.Fail("Session expired. Please sign in again."));
         }
+
+        // Valid credentials and active/new session -> record activity timestamp and succeed
+        AdminSessionManager.RecordActivity(user);
 
         var claims = new[] { new Claim(ClaimTypes.Name, user) };
         var id = new ClaimsIdentity(claims, Scheme.Name);
